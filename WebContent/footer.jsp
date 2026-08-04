@@ -1,0 +1,17 @@
+
+<div id="footer">
+
+	<div class="fl_right" style="position:relative;">
+		<p style="position:relative;">
+			Design & Developed by 
+		<a href="http://www.listspl.co.in/" style="position:static;" >
+			<label style="color: #FFFFFF; cursor: pointer;">
+				<u> LIST Software Pvt. Ltd.</u>
+		   </label>
+		</a>
+		
+				<br /> Version 2025.09.01<br />
+		</p>
+	</div>
+
+</div>

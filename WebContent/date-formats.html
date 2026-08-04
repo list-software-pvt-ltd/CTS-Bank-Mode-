@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>jQuery UI Datepicker - Format date</title>
+	<link rel="stylesheet" href="jquery/jquerycss/jquery.ui.all.css">
+	<script src="jquery/jquerylib/jquery-1.10.2.js"></script>
+	<script src="jquery/jquerylib/ui/jquery.ui.core.js"></script>
+	<script src="jquery/jquerylib/ui/jquery.ui.widget.js"></script>
+	<script src="jquery/jquerylib/ui/jquery.ui.datepicker.js"></script>
+	<link rel="stylesheet" href="jquery/jquerycss/demos.css">
+	<script>
+
+			
+	$(document).ready(function()
+	{
+		var fromDate = $('#datepicker');
+		fromDate.datepicker({dateFormat: 'dd-mm-yy'});	
+		
+		var toDate = $('#datepicker1');
+		toDate.datepicker({dateFormat: 'dd-mm-yy'});
+	});
+
+		
+	function getDate()
+	{
+		//var date = $('#datepicker').datepicker('getDate');
+		//var date = $('#datepicker').datepicker({dateFormat: 'dd-mm-yy' }).val();
+		
+		alert('date:'+document.getElementById("datepicker").value);
+		alert('date:'+document.getElementById("datepicker1").value);
+	}	
+	
+	</script>
+</head>
+<body>
+
+From Date:<input type="text" id="datepicker" value="dd-mm-yyyy"/>
+To Date:<input type="text" id="datepicker1" value="dd-mm-yyyy"/>
+<input type="button" value="Get Date" onClick="getDate()">
+</body>
+</html>

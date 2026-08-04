@@ -1,0 +1,2523 @@
+package cts;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.security.PrivateKey;
+import java.security.Signature;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Properties;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import org.apache.commons.codec.binary.Base64;
+//////////////////
+/////////////
+import org.apache.commons.io.FileUtils;
+
+public class Configuration {// 1
+	public static int dasLength;
+	static int micrDsaLen;
+	// static Connection con=null;
+	// static Connection con_clearingType=null;
+	// static Connection con=getConnection();
+	// static Connection con_clearingType=getConnection();
+	// static PreparedStatement pst_clearingType=null ;
+	public static String signatureStatus = "SUCCESS";
+	
+	public static Connection getConnection() {// 2/
+		Connection con = null;
+		String db_ip = "", sid = "", port = "", db_user = "", db_pwd = "";
+		try {// 3
+			Properties prop = new Properties();
+			InputStream inputStream = Configuration.class.getClassLoader()
+					.getResourceAsStream("/common.properties");
+			prop.load(inputStream);
+			db_ip = prop.getProperty("DATABASE_IP");
+			sid = prop.getProperty("SID");
+			port = prop.getProperty("PORT");
+			db_user = prop.getProperty("DBUSER");
+			db_pwd = prop.getProperty("DBPASSWORD");
+			
+			//System.out.println("jdbc:oracle:thin:@" + db_ip+ ":" + port + ":" + sid+"   "+db_user+"   "+db_pwd);
+			db_ip=ListEncryption.decryptData(db_ip);
+			port=ListEncryption.decryptData(port);
+			sid=ListEncryption.decryptData(sid);
+			db_user=ListEncryption.decryptData(db_user);
+			db_pwd=ListEncryption.decryptData(db_pwd);
+			//System.out.println("jdbc:oracle:thin:@" + db_ip+ ":" + port + ":" + sid+"   "+db_user+"   "+db_pwd);
+			Class.forName("oracle.jdbc.driver.OracleDriver");
+			con = DriverManager.getConnection("jdbc:oracle:thin:@" + db_ip
+					+ ":" + port + ":" + sid, db_user, db_pwd);
+		}// 3
+		catch (FileNotFoundException e1) 
+		{// 3
+			e1.printStackTrace();
+			writeLog("Can not find config_cts.ini" + e1);
+			// System.exit(1);
+		}// 3
+		catch (Exception e) {// 3
+			// Catch exception if any
+			e.printStackTrace();
+			writeLog("Can not find config_cts.ini--------------" + e);
+			System.err.println("Error: " + e.getMessage());
+			// System.err.println("Error while reading config_bkup.ini ");
+			// System.exit(1);
+		}// 3
+		return con;
+	}// 2
+
+	public static String getDDMMYYYY() {
+		java.util.Date today = new java.util.Date();
+		String toDate = lPad("" + today.getDate(), 2, "0")
+				+ lPad("" + (today.getMonth() + 1), 2, "0")
+				+ lPad("" + (today.getYear() + 1900), 2, "0");
+		return toDate;
+	}
+	public static String getYYYYMMDD() {
+		java.util.Date today = new java.util.Date();
+		String toDate = lPad("" + (today.getYear() + 1900), 2, "0")
+				+ lPad("" + (today.getMonth() + 1), 2, "0")
+				+ lPad("" + today.getDate(), 2, "0");
+		return toDate;
+	}
+	
+	public static String getMMDDYYYY() {
+		java.util.Date today = new java.util.Date();
+		String toDate = lPad("" + (today.getMonth() + 1), 2, "0")
+				+ lPad("" + today.getDate(), 2, "0")
+				+lPad("" + (today.getYear() + 1900), 2, "0");
+		return toDate;
+	}
+
+	public static String getDDMMYY() {
+		java.util.Date today = new java.util.Date();
+		String toDate = lPad("" + today.getDate(), 2, "0")
+				+ lPad("" + (today.getMonth() + 1), 2, "0")
+				+ lPad("" + (today.getYear() + 1900), 2, "0").substring(2);
+		return toDate;
+	}
+	public static String getRRFFileDB(String chequeNo, String PAYORBANKROUTNO) {// 1
+		String retVal = " ";
+		//writeLog("**** getRRFFileDB: chequeNo:" + chequeNo+ "PAYORBANKROUTNO: " + PAYORBANKROUTNO);
+		ResultSet rs = null;
+		String CLEARINGTYPE = "", ITEMSEQUENCENO = "", presentmentDate = "", cycleNo = "", ACCOUNTNO = "", PresentingBankRoutNo = "", BOFDRoutNo = "", BOFDBusDate = "", DepositorAcct = "", IFSC = "";
+		Connection con_clearingType = getConnection();
+		PreparedStatement pst_clearingType = null;
+		try {// 2
+			pst_clearingType = con_clearingType
+					.prepareStatement("select CLI_CLEARINGTYPE,CLI_ITEMSEQUENCENO,CLI_PRESENTMENTDATE,CLI_CYCLENO,CLI_ACCOUNTNO,CLI_PRESENTINGBANKROUTNO,CLI_BOFDRoutNo,BOFDBusDate,CLI_DEPOSITORACCT,CLI_IFSC from CLEARINGINWARD where CLI_SERIALNO=? and  CLI_PAYORBANKROUTNO=?");
+			pst_clearingType.setString(1, chequeNo);
+			pst_clearingType.setString(2, PAYORBANKROUTNO);
+			rs = pst_clearingType.executeQuery();
+			if (rs.next()) {// 3
+				//writeLog("*** in if ****:");
+				CLEARINGTYPE = rs.getString(1);
+				ITEMSEQUENCENO = rs.getString(2);
+				presentmentDate = rs.getString(3);
+				cycleNo = rs.getString(4);
+				ACCOUNTNO = rs.getString(5);
+				PresentingBankRoutNo = rs.getString(6);
+				BOFDRoutNo = rs.getString(7);
+				BOFDBusDate = rs.getString(8);
+				DepositorAcct = rs.getString(9);
+				IFSC = rs.getString(10);
+				;
+				retVal = CLEARINGTYPE + "#" + ITEMSEQUENCENO + "#"
+						+ presentmentDate + "#" + cycleNo + "#"
+						+ PresentingBankRoutNo + "#" + BOFDRoutNo + "#"
+						+ BOFDBusDate + "#" + DepositorAcct + "#" + IFSC + "#";
+				//writeLog("*** in if:" + retVal);
+			}// 3
+			if (retVal.length() == 0)
+				retVal = "Value Not Found";
+		}// 2
+		catch (Exception e) {// 2
+			writeLog("Exception in getRRFFileDB:" + e);
+			e.printStackTrace();
+		}// 2
+		finally {
+			try {
+				if (rs != null)
+					rs.close();
+				if (pst_clearingType != null)
+					pst_clearingType.close();
+				if (con_clearingType != null)
+					con_clearingType.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		writeLog("*** exit from getRRFFileDB:" + retVal);
+		return retVal;
+	}// 1
+
+	public static String getConfValByNm(String confVal,Connection con) {// 2
+		String value = "";
+		PreparedStatement pst = null;
+		ResultSet rs = null;
+		//Connection con = null;
+		try {// 3
+			//con = getConnection();
+			
+			pst = con.prepareStatement("select " + confVal
+					+ " from CONFIGURATION");
+			rs = pst.executeQuery();
+			if (rs.next()) {
+				value = rs.getString(1);
+			}
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
+			/*if (con != null)
+				con.close();*/
+			if (value.length() == 0) {
+				value = "Cant Find value for " + confVal;
+			}
+		}// 3
+		catch (Exception e) {// 3
+			writeLog("Cant Find value for " + confVal+ " Exception in getConfValByNm():::::" + e);
+			e.printStackTrace();
+		}// 3
+		finally {
+			try {
+				if (rs != null)
+					rs.close();
+				if (pst != null)
+					pst.close();
+				/*if (con != null)
+					con.close();*/
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return value;
+	}// 2
+
+	public static String getRRFItemSeqNo(String chequeNo, String PAYORBANKROUTNO) {// 1
+
+		writeLog("********* inside getRRFItemSeqNo:::>>>chequeNo:"+ chequeNo + "PAYORBANKROUTNO:>>" + PAYORBANKROUTNO);
+		PreparedStatement pst = null;
+		ResultSet rs = null;
+		String value = "";
+		Connection con = null;
+		try {
+			con = getConnection();
+			pst = con
+					.prepareStatement("select CLI_ITEMSEQUENCENO from CLEARINGINWARD where CLI_SERIALNO=? and CLI_PAYORBANKROUTNO=?");
+			pst.setString(1, chequeNo);
+			pst.setString(1, PAYORBANKROUTNO);
+			rs = pst.executeQuery();
+			if (rs.next()) {
+				value = rs.getString(1);
+			}
+
+			if (value.length() == 0) {
+				value = "Cant Find value for chequeNo: in getRRFItemSeqNo() chequeNo:"
+						+ chequeNo + "PAYORBANKROUTNO:>>" + PAYORBANKROUTNO;
+			}
+		} catch (Exception e) {
+			writeLog("Exception :getRRFItemSeqNo:" + e);
+			e.printStackTrace();
+		} finally {
+			try {
+				if (pst != null)
+					pst.close();
+				if (con != null)
+					con.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return value;
+	}// 1
+
+	// ?????
+	public static String getDraweeAccountNo(String chequeNo,
+			String payOrBankRoutNo,Connection con) {
+		String value = "";
+		//Connection con = null;
+		PreparedStatement pst = null;
+		ResultSet rs = null;
+		try {// 3
+			//con = getConnection();
+			pst = con
+					.prepareStatement("select CLI_ACCOUNTNO from CLEARINGINWARD where CLI_PAYORBANKROUTNO=? and CLI_SERIALNO=?");
+			pst.setString(1, payOrBankRoutNo);
+			pst.setString(2, chequeNo);
+			rs = pst.executeQuery();
+			if (rs.next()) {
+				value = rs.getString(1);
+			}
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
+			if (con != null)
+				con.close();
+			if (value.length() == 0) {
+				value = "Cant Find value for payOrBankRoutNo::: "
+						+ payOrBankRoutNo + "chequeNo:::::" + chequeNo;
+			}
+		}// 3
+		catch (Exception e) {// 3
+			writeLog("Cant Find value for " + payOrBankRoutNo+ " Exception. getDraweeAccountNo():::::" + e);
+			e.printStackTrace();
+		}// 3
+		finally {// 3
+			try {
+				if (rs != null)
+					rs.close();
+				if (pst != null)
+					pst.close();
+				/*if (con != null)
+					con.close();*/
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}// 3
+		return value;
+	}// end getDraweeAccountNo
+		// ?????
+
+	// //////////////////
+	public static String getMICRCD(String branch,Connection con) {// 2
+		String value = "";
+		//Connection con = null;
+		PreparedStatement pst = null;
+		ResultSet rs = null;
+		try {// 3
+			//con = getConnection();
+			// PreparedStatement 
+			pst =
+			 con.prepareStatement("select BRM_MICRCD from BRANCHMSTR where BRM_BRNCD=?");
+			//pst = con
+			//		.prepareStatement("select CFG_BNKRTMCD from CONFIGURATION ");
+			 pst.setString(1, branch);
+			rs = pst.executeQuery();
+			if (rs.next()) {
+				value = rs.getString(1);
+			}
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
+			
+			if (value.length() == 0) {
+				value = "Cant Find value for branch::: " + branch;
+			}
+		}// 3
+		catch (Exception e) {// 3
+			writeLog("Cant Find value for " + branch+ " Exception:::::" + e);
+			e.printStackTrace();
+		}// 3
+		finally {// 3
+			try {
+				if (rs != null)
+					rs.close();
+				if (pst != null)
+					pst.close();
+				/*if (con != null)
+					con.close();*/
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}// 3
+		return value;
+	}// 2 getMICRCD
+		// /////////////////
+
+	public static String getHHMISS() {
+		java.util.Date today = new java.util.Date();
+		String toDate = lPad("" + today.getHours(), 2, "0")
+				+ lPad("" + (today.getMinutes()), 2, "0")
+				+ lPad("" + (today.getSeconds()), 2, "0");
+		return toDate;
+	}
+
+	public static String moveToArchive(String Filename, String UpOrDown,
+			String branchFolder, String fileType, String opType) throws SQLException
+	// fileType======= M=MICR I=Images X=xml and img
+	{// 2
+		String retStr = "";
+		String srcFilePath = "";
+		String destFilePath = "";
+		Connection con=getConnection();
+		try {// 3
+			if (UpOrDown.equalsIgnoreCase("U")) {// 4
+				if (opType.equalsIgnoreCase("C")) {
+					destFilePath = getConfValByNm("CFG_ARCuploadpath_to_chi",con);
+					if (fileType.equalsIgnoreCase("I")) {// 5
+						destFilePath = destFilePath + getDDMMYYYY()
+								+ "/ClearingOutward/Images/";
+						srcFilePath = getConfValByNm("CFG_uploadpath_to_chi",con)
+								+ branchFolder + "/ClearingOutward/Images/";
+					}// 5
+					else if (fileType.equalsIgnoreCase("M")) {// 5
+						writeLog("In MiCAR");
+						destFilePath = destFilePath + getDDMMYYYY()
+								+ "/ClearingOutward/MICRWaveforms/";
+						srcFilePath = getConfValByNm("CFG_uploadpath_to_chi",con)
+								+ branchFolder
+								+ "/ClearingOutward/MICRWaveforms/";
+					}// 5
+					else if (fileType.equalsIgnoreCase("X")) {// 5
+						destFilePath = destFilePath + getDDMMYYYY()
+								+ "/ClearingOutward/";
+						srcFilePath = getConfValByNm("CFG_uploadpath_to_chi",con)
+								+ branchFolder + "/ClearingOutward/";
+					}// 5
+				} else if (opType.equalsIgnoreCase("R")) {
+					destFilePath = getConfValByNm("CFG_ARCuploadpath_to_chi",con);
+					/*
+					 * if(fileType.equalsIgnoreCase("I")) {//5
+					 * destFilePath=destFilePath
+					 * +getDDMMYYYY()+"/ClearingOutward/Images/";
+					 * srcFilePath=getConfValByNm
+					 * ("CFG_uploadpath_to_chi")+branchFolder
+					 * +"/ReturnOutward/Images/"; }//5
+					 */
+					if (fileType.equalsIgnoreCase("M")) {// 5
+						writeLog("In MiCAR");
+						destFilePath = destFilePath + getDDMMYYYY()
+								+ "/ReturnOutward/";
+						srcFilePath = getConfValByNm("CFG_uploadpath_to_chi",con)
+								+ branchFolder + "ReturnOutward/";
+					}// 5
+					else if (fileType.equalsIgnoreCase("X")) {// 5
+						destFilePath = destFilePath + getDDMMYYYY()
+								+ "/ReturnOutward/";
+						srcFilePath = getConfValByNm("CFG_uploadpath_to_chi",con)
+								+ branchFolder;
+					}// 5
+					else if (fileType.equalsIgnoreCase("T")) {// 5
+						writeLog("Move text file");
+						writeLog("Move text file");
+						destFilePath = destFilePath + getDDMMYYYY()
+								+ "/ReturnOutward/";
+						srcFilePath = getConfValByNm("CFG_uploadpath_to_chi",con)
+								+ branchFolder + "ReturnOutward/";
+					}// 5
+				}
+
+			}// 4
+			else {// 4
+				destFilePath = getConfValByNm("CFG_ARCdownloadpath_from_chi",con);
+				if (fileType.equalsIgnoreCase("I")) {// 5
+					destFilePath = destFilePath + getDDMMYYYY()
+							+ "/ClearingInward/Images/";
+					srcFilePath = getConfValByNm("CFG_downloadpath_from_chi",con)
+							+ "/ClearingInward/Images/";
+				}// 5
+				else if (fileType.equalsIgnoreCase("M")) {// 5
+					writeLog("In MiCAR");
+					destFilePath = destFilePath + getDDMMYYYY()
+							+ "/ClearingInward/Images/";
+					srcFilePath = getConfValByNm("CFG_downloadpath_from_chi",con)
+							+ "/ClearingInward/Images/";
+				}// 5
+				else if (fileType.equalsIgnoreCase("X")) {// 5
+					destFilePath = destFilePath + getDDMMYYYY()
+							+ "/ClearingInward/";
+					srcFilePath = getConfValByNm("CFG_downloadpath_from_chi",con)
+							+ "/ClearingInward/";
+				}// 5
+			}// 4
+
+			if (!new File(destFilePath).exists()) {
+				new File(destFilePath).mkdirs();
+			}
+			// new File(destFilePath+"/"+getDDMMYYYY()).mkdir();
+			FileInputStream fis = new FileInputStream(srcFilePath + Filename);
+			FileOutputStream fos = new FileOutputStream(destFilePath + "/"
+					+ Filename);
+			int readCnt = -1;
+			while ((readCnt = fis.read()) != -1) {// 5
+				fos.write(readCnt);
+			}// 5
+			fis.close();
+			fos.close();
+			writeLog("srcFilePath+Filename:::" + srcFilePath					+ Filename);
+			writeLog("srcFilePath+Filename:::" + srcFilePath					+ Filename);
+			writeLog("srcFilePath+Filename:::" + srcFilePath					+ Filename);
+			// new File(srcFilePath+Filename).delete();
+			writeLog("new File(srcFilePath+Filename).delete(); ::"+ new File(srcFilePath + Filename).delete());
+			writeLog("new File(srcFilePath+Filename).delete(); ::"					+ new File(srcFilePath + Filename).delete());
+			retStr = "SUCCESS";
+		}// 3
+		catch (Exception e) {// 3
+			writeLog("Cant Move To Archive EXCEPTION:::::" + e);
+			e.printStackTrace();
+		}// 3
+		con.close();
+		return retStr;
+	}
+
+	public static String lPad(String str, int noOfChars, String padChar) {// 2
+		String retVal = "";
+		try {// 3
+			for (int i = 0; i < (noOfChars - str.length()); i++) {// 4
+				retVal = retVal + padChar;
+			}// 4
+			retVal = retVal + str;
+		}// 3
+		catch (Exception e) {// 3
+			writeLog("Exception in lPad()::::" + e);
+			e.printStackTrace();
+		}// 3
+		return retVal;
+	}// 2
+
+	public static String lPadForMicr(String str, int noOfChars, String padChar) {// 2
+																					// abhi
+
+		String retVal = "";
+		try {// 3
+			for (int i = 0; i < (noOfChars); i++) {// 4
+				retVal = retVal + padChar;
+			}// 4
+			retVal = retVal + str;
+		}// 3
+		catch (Exception e) {// 3
+			writeLog("Exception::::" + e);
+			e.printStackTrace();
+		}// 3
+		return retVal;
+	}// 2
+
+	public static String rPad(String str, int noOfChars, String padChar) {// 2
+		String retVal = "";
+		try {// 3
+			retVal = retVal + str;
+			for (int i = 0; i < (noOfChars - str.length()); i++) {// 4
+				retVal = retVal + padChar;
+			}// 4
+		}// 3
+		catch (Exception e) {// 3
+			writeLog("Exception::::" + e);
+			e.printStackTrace();
+		}// 3
+		return retVal;
+	}// 2
+
+	// public static MicrDataInformation[] prepareMICARdata(String BRNCD)
+	public static String prepareMICARdata(String BRNCD) { // 2
+		writeLog(" inside prepareMICARdata $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
+		String retMess = "SUCCESS";
+		
+		Connection con = null;
+		PreparedStatement pst = null,perpst=null;
+		String micrFile = "",whereClause="";
+		long sys_cur_millis = System.currentTimeMillis();
+		try {// 3
+			con = getConnection();
+			String uploadpath_to_chi = getConfValByNm("CFG_uploadpath_to_chi",con);
+			String MICR_DRAWEE_ACCNO = getConfValByNm("CFG_MICR_DRAWEE_ACCNO",con);
+			/*
+			 * String qry = "update clearingoutward  set clo_drawee_accno=?, ";
+			 * qry = qry+
+			 * " clo_img_frnt_bw=?, clo_img_back_bw=?, clo_img_frnt_gr=?, clo_img_back_gr=? "
+			 * ; qry = qry+
+			 * " where  clo_date_ddmmyyyy=?  and  clo_chqno=? and clo_sortcd=?";
+			 */
+			
+			
+			String qry = "update clearingoutward  set clo_drawee_accno=?, ";
+			qry = qry
+					+ " clo_img_frnt_bw=?, clo_img_back_bw=?, clo_img_frnt_gr=?, clo_img_back_gr=?,";
+			qry = qry
+					+ " CLO_IQASTATUS=?, CLO_IQARESULTS=?, CLO_PPRTOFOLLOW=decode(CLO_IQA_IGNIND,'Y','Y',?) ,"
+					+ "CLO_ITEMSEQNO=?,clo_micrtxt=?";
+			
+			if(MICR_DRAWEE_ACCNO.equalsIgnoreCase("Y"))
+			{
+				whereClause = " where  clo_date_ddmmyyyy=?  and  clo_chqno=? and clo_sortcd=? and CLO_TRANCD=? "
+						+ "and CLO_BRANCH_CD=? and CLO_DRAWEE_ACCNO=?  AND CLO_PAYEE_ACCNM is not null ";// and
+			}
+			else
+			{
+				whereClause = " where  clo_date_ddmmyyyy=?  and  clo_chqno=? and clo_sortcd=? and CLO_TRANCD=? "
+						+ "and CLO_BRANCH_CD=?  AND CLO_PAYEE_ACCNM is not null";
+			}
+			whereClause = whereClause + " and nvl(CLO_CONVERT_FLG,'N')= 'N' ";
+			
+			// CLO_DRAWEE_ACCNO=";
+			//pst = con.prepareStatement(qry);
+			
+			
+			new File(uploadpath_to_chi + BRNCD+ "/ClearingOutward/Images/Thumbs.db").delete();
+			new File(uploadpath_to_chi + BRNCD+ "/ClearingOutward/MICR.txt").delete();
+			String fileList[] = new File(uploadpath_to_chi + BRNCD+ "/ClearingOutward/Images/").list();
+			writeLog("----------- 111 -----------"+uploadpath_to_chi + BRNCD+ "/ClearingOutward/Images/");
+			writeLog("fileList.length :" + fileList.length);
+			// note: if fileList.length is raise NullPointerEception then show
+			// message No File At Upload Path
+			// System.out.println("----------- 222 -----------");
+			int noOfCheques = -1;
+			/*
+			 * System.out.println("fileList.length"+fileList.length); for(int
+			 * i=0;i<fileList.length;i++) {
+			 * System.out.println("\n"+i+"     "+fileList[i]); }
+			 */
+
+			writeLog("fileList.length % 4 :" + fileList.length % 4);
+
+			// if ((fileList.length % 4) == 0 && fileList.length!=0)
+			{// 4
+
+				String chequeNames = "";
+				String itemMicrFileName = "";
+				// ///////////////////////////
+				// System.out.println("CHECK FOR DIR PATH EXISTS");
+				String micrFilePath = uploadpath_to_chi + BRNCD+ "/ClearingOutward/MICRWaveforms/";
+				if (new File(micrFilePath).exists()
+						&& new File(micrFilePath).list().length > 0) {//
+					String micrFileNames[] = new File(uploadpath_to_chi + BRNCD+ "/ClearingOutward/MICRWaveforms/").list();
+					noOfCheques = micrFileNames.length;
+					
+					String imageFoldPath = uploadpath_to_chi + BRNCD+ "/ClearingOutward/Images/";
+					int counter = 0;
+					for (int i = 0; i < noOfCheques; i++) {
+						itemMicrFileName = micrFileNames[i];
+						File MicrFileObj=new File(micrFilePath+itemMicrFileName);
+						if(MicrFileObj.length()==0)
+						{
+							MicrFileObj.delete();
+							writeLog("\n\nMICR Deleted because length is zero");
+							continue;
+						}
+						String imgFrntBw = "", imgBackBw = "", imgFrntGr = "", imgBackGr = "";
+
+						// String imgFileContains=chqNo+sortCode+accNo;
+						String imgName = itemMicrFileName.split(".txt")[0];
+						imgFrntBw = "F"+imgName+".tif";
+						imgBackBw = "R"+imgName+".tif";
+						imgFrntGr = "F"+imgName+"G.jpg";
+						imgBackGr = "R"+imgName+"G.jpg";
+						File ImgFrntBwObj=new File(imageFoldPath+imgFrntBw);
+						File ImgBackBwnewObj=new File(imageFoldPath+imgBackBw);
+						File ImgFrntGrObj=new File(imageFoldPath+imgFrntGr);
+						File ImgBackGrObj=new File(imageFoldPath+imgBackGr);
+						writeLog("\n\nitemMicrFileName=111111"+ itemMicrFileName);
+						//String strTempFile = new File() ;
+						
+						if(itemMicrFileName.toLowerCase().contains("temp"))
+							{
+								MicrFileObj.delete();
+								ImgFrntBwObj.delete();
+								ImgBackBwnewObj.delete();
+								ImgFrntGrObj.delete();
+								ImgBackGrObj.delete();
+								writeLog("\n\nMICR Deleted because name is temp");
+								continue;
+							}
+						
+						StringBuffer clo_iqaResult = new StringBuffer("");
+						String singleRecord = "";
+						String CLO_IQASTATUS = "";
+						try {// try
+
+							BufferedReader br = new BufferedReader(
+									new FileReader(
+											MicrFileObj));
+							singleRecord = br.readLine();
+							String line = "";
+							
+							while ((line = br.readLine()) != null) {
+								// this string buffer is contains IQA result
+								// System.out.println("\n --- while ----");
+								// clo_iqaResult.append(line);
+								if (line.contains("STATUS")) {
+									
+									CLO_IQASTATUS = line.split(":")[1];
+								}
+								
+							}
+							br.close();
+							
+						}// try
+						catch (FileNotFoundException e) {
+							writeLog("\n --- FileNotFoundException *****%%%%% ----"+ e);
+						}
+						//System.out.println("\n\tStatus:>>" + CLO_IQASTATUS);
+						
+					if (singleRecord.toString().indexOf("?") > -1) {
+							// faultyCheque.append(micrFileName+"\n");
+							writeLog("\n\nMICR Deleted because faulty MICR");
+							MicrFileObj.delete();
+							ImgFrntBwObj.delete();
+							ImgBackBwnewObj.delete();
+							ImgFrntGrObj.delete();
+							ImgBackGrObj.delete();
+							continue;
+						}
+						
+						
+						String micrLine = "", itemSeqNo = "";
+						
+						if(singleRecord.indexOf("#")>-1)
+						{
+							String singleRecordArr[] = singleRecord.split("#");
+							if(singleRecord.length()>(singleRecord.indexOf("#")+1))
+							{
+								micrLine = singleRecordArr[0];
+								//System.out.println("in micr micrLine==="+micrLine);
+								try {
+									itemSeqNo = ""+Long.parseLong(singleRecordArr[1]);
+							/*System.out.println("in micr itemSeqNo==="+itemSeqNo);
+							if(itemSeqNo.length()<=14)
+							{
+								itemSeqNo=lPad(""+Integer.parseInt(itemSeqNo),14,"0");
+							}
+							
+							System.out.println("@@@ after in micr itemSeqNo==="+itemSeqNo);
+							*/
+									if(itemSeqNo.equalsIgnoreCase("SUCCESS"))
+									{
+										writeLog("\n\nMICR Deleted because no ITEMSEQNumber is invalid");
+										MicrFileObj.delete();
+										ImgFrntBwObj.delete();
+										ImgBackBwnewObj.delete();
+										ImgFrntGrObj.delete();
+										ImgBackGrObj.delete();
+										
+										continue;
+									}
+								}
+								catch(Exception e) {
+									System.out.println("in Exception micr itemSeqNo===");
+									writeLog("\n\nMICR Deleted because no ITEMSEQNumber is invalid");
+									MicrFileObj.delete();
+									ImgFrntBwObj.delete();
+									ImgBackBwnewObj.delete();
+									ImgFrntGrObj.delete();
+									ImgBackGrObj.delete();
+									
+									continue;
+								}
+							}
+							else
+							{
+								writeLog("\n\nMICR Deleted because no ITEMSEQNumber----1");
+								MicrFileObj.delete();
+								ImgFrntBwObj.delete();
+								ImgBackBwnewObj.delete();
+								ImgFrntGrObj.delete();
+								ImgBackGrObj.delete();
+								
+								continue;
+							}
+						}
+						else
+						{
+							writeLog("\n\nMICR Deleted because no ITEMSEQNumber----2");
+							MicrFileObj.delete();
+							ImgFrntBwObj.delete();
+							ImgBackBwnewObj.delete();
+							ImgFrntGrObj.delete();
+							ImgBackGrObj.delete();
+							continue;
+						}
+						
+
+						
+						//itemSeqNo=getDDMMYY()+itemSeqNo.substring(itemSeqNo.length()-7);
+						//itemSeqNo=lPad(itemSeqNo, 14, "0");
+						
+						String fileData[] = micrLine.split("<");
+						
+						String chqNo = fileData[1];
+						//System.out.println("\nchqNo=" + chqNo);
+						String sortCode = fileData[2].split(":")[0];
+						//System.out.println("\nsortCode=" + sortCode);
+						String tranNo = "";
+						String accNo = "";
+						if (fileData.length == 4) {
+							tranNo = fileData[3];
+							//System.out.println("\ntranNo=" + tranNo);
+							if (tranNo.indexOf(";") > -1) {
+								tranNo = tranNo.split(";")[0];
+								//System.out.println("\nIn If tranNo=" + tranNo);
+							}
+							//System.out.println("\nAfter If tranNo=" + tranNo);
+							accNo = fileData[2].split(":")[1];
+							//System.out.println("");
+						}
+
+						// index 0=null 1=cheque number 2=bank code :
+						// transaction number
+						if (fileData.length == 3) {
+							tranNo = fileData[2].split(":")[1];
+							// accNo=lPad("0", 16, "0");
+							accNo = lPad("0", 6, "0"); //comment by SAM 29/09/21  comment removed by OVK with SAM 25/11/21
+							//accNo = lPad("0", 7, "0"); comment by OVK with SAM 25/11/21
+						}
+
+						String CLO_PPRTOFOLLOW = "N";
+						
+						int trNo = Integer.parseInt(tranNo);
+						/*
+						 * if(tranNo.length()==3 && accNo.length()==7)//this
+						 * condition is only applicable for ifi cheque is
+						 * goverment cheque.... { CLO_PPRTOFOLLOW="Y"; }
+						 */
+						if ((trNo >= 20 && trNo <= 27 && trNo!=23)||trNo==41)// && accNo.length()==6)
+						{
+							CLO_PPRTOFOLLOW = "Y";
+						}
+						/*
+						 * if(CLO_IQASTATUS.equals("FAIL"))//this condition is
+						 * only applicable for ifi IQAResult is defected .... {
+						 * CLO_PPRTOFOLLOW="Y"; } else { //this else is for if
+						 * our IQA result is not defected and it is not gov
+						 * cheque. CLO_PPRTOFOLLOW="N"; }
+						 */
+						
+						
+						 if (!ImgFrntBwObj.exists()
+								|| !ImgBackBwnewObj.exists()
+								|| !ImgFrntGrObj.exists()) {// if
+							imgFrntBw = "";
+							imgBackBw = "";
+							imgFrntGr = "";
+							imgBackGr = "";
+							continue;
+						}
+						 if (ImgFrntBwObj.length()==0
+									|| ImgBackBwnewObj.length()==0
+									|| ImgFrntGrObj.length()==0 
+									|| ImgBackGrObj.length()==0) {// if
+								imgFrntBw = "";
+								imgBackBw = "";
+								imgFrntGr = "";
+								imgBackGr = "";
+								continue;
+							}
+						//System.out.println(qry);
+						pst = con.prepareStatement(qry+whereClause);
+						pst.setString(1, accNo);
+						pst.setString(2, imgFrntBw);
+						pst.setString(3, imgBackBw);
+						pst.setString(4, imgFrntGr);
+						pst.setString(5, imgBackGr);
+						// CLO_IQASTATUS,clo_iqaResult,
+						pst.setString(6, CLO_IQASTATUS);
+						pst.setString(7, clo_iqaResult.toString());
+						pst.setString(8, CLO_PPRTOFOLLOW);
+						pst.setString(9, itemSeqNo);
+						// where clause
+						pst.setString(10, micrLine);
+						pst.setString(11, Configuration.getDDMMYYYY());
+						//System.out.println("\nchqNo:::>>" + chqNo);
+						pst.setString(12, chqNo);
+						//System.out.println("\nsortCode::::>>>" + sortCode);
+						pst.setString(13, sortCode);
+						pst.setString(14, tranNo);
+						pst.setString(15, BRNCD);
+						if(MICR_DRAWEE_ACCNO.equalsIgnoreCase("Y"))
+						{
+							pst.setString(16, accNo);
+						}
+						// counter=counter+pst.executeUpdate();
+						// if(counter>0)
+
+						
+						try {
+							/*
+							 * try { Thread.sleep(5000); }catch(Exception e){}
+							 */
+							if (pst.executeUpdate() == 1) {
+								// FileUtils.forceDelete(new
+								// File(uploadpath_to_chi + BRNCD+
+								// "/ClearingOutward/MICR Waveforms/"+itemMicrFileName));
+								File srcFile = new File(uploadpath_to_chi
+										+ BRNCD
+										+ "/ClearingOutward/MICRWaveforms/"
+										+ itemMicrFileName);
+								File destFile = new File(uploadpath_to_chi
+										+ BRNCD
+										+ "/ClearingOutward/MICRWaveforms"
+										+ "_" + getDDMMYYYY() + "_"
+										+ sys_cur_millis + "/"
+										+ itemMicrFileName);
+								FileUtils.copyFile(srcFile, destFile);
+								FileUtils
+										.forceDelete(new File(
+												uploadpath_to_chi
+														+ BRNCD
+														+ "/ClearingOutward/MICRWaveforms/"
+														+ itemMicrFileName));
+								writeLog("\n" + itemMicrFileName+ " is Deleted.");
+							} else {
+								con.rollback();
+							}
+							pst.close();
+						} catch (SQLException e) {
+							if (e.getMessage().indexOf("ORA-00001") > -1) {
+								writeLog("\n\t SQLException in prepareMicrData :>"+ e);
+								File srcFile = new File(uploadpath_to_chi
+										+ BRNCD
+										+ "/ClearingOutward/MICRWaveforms/"
+										+ itemMicrFileName);
+								File destFile = new File(uploadpath_to_chi
+										+ BRNCD
+										+ "/ClearingOutward/MICRWaveforms"
+										+ "_" + getDDMMYYYY() + "_"
+										+ sys_cur_millis + "/"
+										+ itemMicrFileName);
+								FileUtils.copyFile(srcFile, destFile);
+								FileUtils
+										.forceDelete(new File(
+												uploadpath_to_chi
+														+ BRNCD
+														+ "/ClearingOutward/MICRWaveforms/"
+														+ itemMicrFileName));
+								writeLog("\n" + itemMicrFileName+ " is Deleted.");
+
+							}
+							else
+							{
+								e.printStackTrace();
+							}
+								
+						}
+
+						pst = null;
+					}// 5
+						// pw.close();
+						// if(counter==(1+noOfCheques-initialCount))
+					writeLog("(1+noOfCheques)::>>"+ (1 + noOfCheques));
+					writeLog("counter::>>" + counter);
+					/*
+					 * if(counter==(1+noOfCheques)) retMess = "SUCCESS"; else
+					 * retMess =
+					 * "There is some faulty Cheque!#!Check Micr File:\n"
+					 * +faultyCheque;
+					 */
+					con.close();
+					retMess = "SUCCESS";
+				}
+			}
+			// System.out.println("\n\nFiles havinng MICR problem \n"+micrFile);
+			// \n 4
+			/*
+			 * else {// 4 System.out.println("\nWrong Number of Files"); //
+			 * retMess="Wrong Number of Files"; //ABHI //retMess =
+			 * "No File at Branch"; retMess =
+			 * "Wrong Number Of Cheque Image Files."; }// 4
+			 */
+		}// 3
+		catch (NullPointerException w) {// 3
+			writeLog("\n\nNullPointerException in prepareMicreData configuration::::"+ w + "\n\n");
+			retMess = "No File(s) At Upload Path";
+			w.printStackTrace();
+		}// 3
+		catch (Exception e) {// 3
+			writeLog("\n\nException in prepareMicreData configuration::::"+ e + "\n\n");
+			retMess = "FAIL.";
+			e.printStackTrace();
+		}// 3
+		finally {// 3
+			try {
+				if (pst != null)
+					pst.close();
+				if (con != null)
+					con.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}// 3
+		return retMess;
+	}// 2
+
+	public static MicrDataInformation[] CreateMicrObjects(String inputArr[],
+			String BRNCD, PrivateKey privateKey, Connection con) {// CreateMicrObjects()
+		String input = "";
+		//Connection con = null;
+		PreparedStatement pst = null;
+		ResultSet rs = null;
+		int len = inputArr.length;
+		int objarr_len = 0, i = 0;
+		String scannerStr = Configuration
+				.getConfValByNm("CFG_SCANNER",con);
+		MicrDataInformation mdi[] = null;
+		if (len % 3 == 0) {
+			objarr_len = len / 3;
+			// System.out.println("objarr_len:" + objarr_len);
+			mdi = new MicrDataInformation[objarr_len];
+			for (int j = 0; j < len; j++) {
+				input = input + inputArr[j] + "!@!";
+			}
+			try {// 1
+				//con = getConnection();
+				// Configuration.getDDMMYYYY()
+				String branchFolder = BRNCD;// BRNCD.substring(0,
+				String qry = "select * from clearingoutward where ";
+				qry = qry + " clo_branch_cd=?"//'" + branchFolder
+						+ " and clo_convert_flg='Y' and clo_date_ddmmyyyy=?";
+			
+				// System.out.println(qry);
+				pst = con.prepareStatement(qry);
+				pst.setString(1, branchFolder);
+				pst.setString(2, Configuration.getDDMMYYYY());
+				rs = pst.executeQuery();
+				while (rs.next()) {
+					 System.out.println("In side");
+					String chqNo = rs.getString(2);
+					String sortCode = rs.getString(3);
+					String accountNumber = rs.getString(8);
+					
+					if (scannerStr.equalsIgnoreCase("DIGITALCHECK"))
+						accountNumber = "000000";
+
+					/*
+					 * accountNumber = accountNumber.substring( accountNumber.length() - 6,
+					 * accountNumber.length());
+					 */
+					System.out.println("accountNumber=="+accountNumber);
+					String chq = chqNo + sortCode + accountNumber;
+
+					System.out.println("input=="+input+"===chq=="+chq);
+					if (input.indexOf(chq) > -1)// ||
+												// scannerStr.equalsIgnoreCase("DIGITALCHECK"))
+					{// 2.1
+						// System.out.println("found:"+chq);
+						// System.out.println("sCurrentLine:"+sCurrentLine);
+						// String ourBnkCode =rs.getString(1);
+						
+						// String tranNo = lPad(rs.getString(4), 3, "0");
+						String tranNo = rs.getString(4);
+						System.out.println("tranNo======:"+tranNo);
+						tranNo =Integer.parseInt(tranNo)+"";
+						System.out.println("SAM tranNo======:"+tranNo);
+						// String amount = lPad(rs.getString(5), 18, "0");
+						String amount = "" + Long.parseLong(rs.getString(5));
+						// String accNo = lPad(rs.getString(8), 25, "0");
+						String accNo = rs.getString(8);// lPad(""+Long.parseLong(rs.getString(8)),
+						//accNo=lPad("" + Long.parseLong(accNo), 7, "0")	;			// 6, "0");
+						// SerialNo;PayorBankRoutNo;TransCode;Amount
+						// chqNo+sortCode+tranNo+amount
+						String signatureParam = chqNo + sortCode
+								//+ lPad("" + Long.parseLong(accNo), 6, "0")// comment by SAM 29/09/21
+								+ accNo+tranNo+ amount;//
+						String signatureData = "";
+						signatureData = micrEncryptedData(signatureParam,
+								privateKey);
+						
+						// else
+						// //if(getConfValByNm("CFG_SCANNER").equals("DIGITALCHECK"))
+						// signatureData=signatureParam;
+						// String DepositorAcct = lPad(rs.getString(6), 25,
+						// "0");
+						
+						String DepositorAcct = rs.getString(6);
+						String BOFDBusDate = rs.getString(13);
+						// String BOFDRoutNo = lPad(rs.getString(1), 9, "0");
+						String clearingType = lPad(rs.getString(16), 2, "0");
+						String PPRTOFOLLOW = rs.getString(18);
+						String iqaStatus = rs.getString(17);
+						String itemSeqNumber = rs.getString(21);
+						System.out.println("OMOMOMOM----- itemSeqNumber="+itemSeqNumber+"        chqNo="+chqNo);
+						String clo_olbc = rs.getString(23);
+						String payeeName = rs.getString(7);
+						String iqaIgnInd= rs.getString(25);
+						String brncd=branchFolder;
+						// System.out.println("\n\nPayeeName="+payeeName+"\n\n");
+						// System.out.println("itemSeqNumber::::"+itemSeqNumber);
+						// System.out.println("clo_olbc::::"+clo_olbc);
+						//System.out.println("signatureData::::"+signatureParam);
+						// dasLength=0;
+						System.out.println("\n\nsignatureData==="+signatureData+"\n\n");
+						if (!signatureData.equalsIgnoreCase("Fail")) {//lPad(Configuration.getConfValByNm("CFG_SERVICEBNKROUTINGCODE",con),9, "0")
+							mdi[i] = new MicrDataInformation(lPad(Configuration.getConfValByNm("CFG_SERVICEBNKROUTINGCODE",con),9, "0"), chqNo,
+									sortCode, tranNo, amount, accNo,
+									signatureData, DepositorAcct, BOFDBusDate,
+									lPad(Configuration.getConfValByNm("CFG_BANKROUTINGCODE",con),9, "0"), clearingType,iqaIgnInd);
+							writeLog("chqNo::::" + chqNo);
+							mdi[i].setSignatureLength(Integer
+									.toString(micrDsaLen));
+							mdi[i].setPprToFollow(PPRTOFOLLOW);
+							// mdi[i++].setIqaStatus(iqaStatus);
+							mdi[i].setIqaStatus(iqaStatus);
+							mdi[i].setItemSeqNumber(itemSeqNumber);
+							mdi[i].setBranchCode(brncd);
+							mdi[i].setOlbc(clo_olbc);
+							mdi[i].setPayeeName(payeeName);
+							 System.out.println("\n\nPayeeName="+payeeName+"\n\n");
+							// System.out.println("Anand Sir="+con.getMetaData().supportsResultSetConcurrency(ResultSet.CLOSE_CURSORS_AT_COMMIT));
+							// rs.deleteRow();
+							// rs.commit();
+							// rs.updateRow();
+						} else {
+							System.out
+									.println("Fail to generate digital sign for Micr data");
+							signatureStatus = "Private Key Not Found for certificate.";
+						}
+					}// 2.1
+				}
+				if (rs != null)
+					rs.close();
+				if (pst != null)
+					pst.close();
+				/*if (con != null)
+					con.close();*/
+
+			}// 1
+			catch (Exception e) {// 1
+				e.printStackTrace();
+				Configuration.writeLog(""+e);
+			}// 1
+			finally {
+				try {
+					if (rs != null)
+						rs.close();
+					if (pst != null)
+						pst.close();
+					/*if (con != null)
+						con.close();*/
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		} else {
+			return null;
+		}
+		return mdi;
+	}// CreateMicrObjects()
+
+	public static String micrEncryptedData(String signatureParam,
+			PrivateKey privateKey) {// micrEncryptedData
+		String retVal = "";
+		try {// 1
+
+			byte[] signaturebyte = signatureParam.getBytes();
+
+			
+			//String scannerStr = Configuration.getConfValByNm("CFG_SCANNER");
+			//if (scannerStr.equals("PANINI")) {
+				//Signature dsa = Signature.getInstance("SHA256withRSA","SunRsaSign");
+				Signature dsa = Signature.getInstance("SHA256withRSA");
+				dsa.initSign(privateKey);
+				dsa.update(signaturebyte, 0, signaturebyte.length);
+				writeLog("**** 8 **** ");
+				byte[] micrDsa = dsa.sign();
+				micrDsaLen = micrDsa.length;
+				retVal = new String(Base64.encodeBase64(micrDsa));
+			//} else {
+			//	retVal = new String(Base64.encodeBase64(signatureParam
+			//			.getBytes()));
+			//}
+			// retVal =new String(micrDsa);
+			// ///////
+			// System.out.println(" Exit from micrEncryptedData"+retVal);
+		}// 1
+		catch (Exception e) {// 1
+			writeLog("Exception in micrEncryptedData::" + e);
+			retVal = "Fail";
+			e.printStackTrace();
+		}// 1
+		writeLog(" Exit from micrEncryptedData");
+		return retVal;
+	}// micrEncryptedData
+
+	/*
+	 * public static String micrDecryptedData(String signatureParam,String
+	 * dsaLength) {//micrEncryptedData String retVal=""; try {//1 byte[]
+	 * signaturebyte=signatureParam.getBytes(); int
+	 * _dsaLength=Integer.parseInt(dsaLength);
+	 * 
+	 * PublicKey publicKey=new CtsSecurity().getPublicKey(); Signature micr_dsa
+	 * = Signature.getInstance("SHA256withRSA", "SunRsaSign");
+	 * micr_dsa.initVerify(publicKey); micr_dsa.update(imageBytes1);
+	 * 
+	 * System.out.println("**** 7 **** "); micr_dsa.update(signaturebyte, 0,
+	 * signaturebyte.length); System.out.println("**** 8 **** "); byte[]
+	 * micrDsa=micr_dsa.sign(); dasLength=micrDsa.length; String
+	 * micrSignData=new String (Base64.encodeBase64(micrDsa));
+	 * retVal=micrSignData;
+	 * 
+	 * }//1 catch(Exception e) {//1
+	 * System.out.println("Exception in micrEncryptedData::"+e); retVal="Fail";
+	 * }//1 System.out.println(" Exit from micrEncryptedData"+retVal); return
+	 * retVal; }//micrDecryptedData
+	 */
+
+	public static boolean CreateZip(String srcDir, String zipFileDest) {// CreateZip
+		/*
+		 * example String zipFileDest = "E:/zip_dest/zip_mayuri.zip"; String
+		 * srcDir = "E:/src";
+		 */
+		writeLog("Source directory : " + srcDir);
+		writeLog("Destination directory : " + zipFileDest);
+		writeLog("CHECK FOR DIR PATH EXISTS");
+		String folderpath1 = zipFileDest;
+		if (!new File(folderpath1).exists()) {
+			new File(folderpath1).mkdirs();
+		}
+		zipFileDest = zipFileDest + getDDMMYYYY() + ".zip";
+
+		try {// try
+
+			FileOutputStream fos = new FileOutputStream(zipFileDest);
+
+			ZipOutputStream zos = new ZipOutputStream(fos);
+
+			File srcFolder = new File(srcDir);
+
+			boolean m = addDirToArchive(zos, srcFolder);
+
+			// close the ZipOutputStream
+			zos.close();
+
+			if (m == true) {
+				/*
+				 * uncomment this code later (it will delete files from source
+				 * after successful archival) File[] files =
+				 * srcFolder.listFiles();
+				 * 
+				 * for (int i = 0; i < files.length; i++) {
+				 * if(files[i].isFile()) { files[i].delete(); } }
+				 */
+				return true;
+			} else {
+				return false;
+			}
+
+		}// try
+		catch (IOException ioe) {// catch
+			writeLog("Error creating zip file: " + ioe);
+			return false;
+		}// catch
+	}// CreateZip
+
+	private static boolean addDirToArchive(ZipOutputStream zos, File srcFolder) {// addDirToArchive
+
+		File[] files = srcFolder.listFiles();
+
+		writeLog("Adding directory: " + srcFolder.getName());
+
+		for (int i = 0; i < files.length; i++) {// for
+			// remove comment if you want to add directories in path
+			// if the file is directory, use recursion
+			/*
+			 * if (files[i].isDirectory()) {//1 addDirToArchive(zos, files[i]);
+			 * continue; }//1
+			 */
+
+			try {// 2
+
+				writeLog("tAdding file: " + files[i].getName());
+				if (files[i].isFile()) {// 3
+					writeLog("cur_date:" + getDDMMYYYY());
+
+					SimpleDateFormat sdf = new SimpleDateFormat("ddmmyyyy");
+					writeLog("file :" + files[i].getName()+ "Last modified date:"+ sdf.format(files[i].lastModified()));
+
+					// create byte buffer
+					byte[] buffer = new byte[1024];
+
+					FileInputStream fis = new FileInputStream(files[i]);
+
+					zos.putNextEntry(new ZipEntry(files[i].getName()));
+
+					int length;
+
+					while ((length = fis.read(buffer)) > 0) {// 4
+						zos.write(buffer, 0, length);
+
+					}// 4
+
+					zos.closeEntry();
+
+					// close the InputStream
+					fis.close();
+
+				}// 3
+			}// 2
+			catch (IOException ioe) {// 2
+				writeLog("IOException :" + ioe);
+				return false;
+			}// 2
+
+		}// for
+		return true;
+	}// addDirToArchive
+
+	public static String getItemSequenceNo(String branch) {// getSequenceNo
+		String seqNo = "";
+		String SORTERID = "";
+		Connection con = null;
+		PreparedStatement pst = null;
+		PreparedStatement pst2 = null;
+		ResultSet rs = null;
+		ResultSet rs1 = null;
+		int no = 0;
+		try {// 1
+			writeLog("******** inside getItemSequenceNo() ******"+ branch);
+			con = getConnection();
+			java.util.Date today = new java.util.Date();
+			String cur_date = getDDMMYYYY();
+			writeLog("cur_date:" + cur_date);
+			pst = con
+					.prepareStatement("select * from CLR_OUT_SEQ WHERE CURDATE=to_date(?,'ddmmyyyy')");
+			pst.setString(1, cur_date);
+			rs = pst.executeQuery();
+			if (rs.next()) {
+				seqNo = rs.getString(2);
+				no = Integer.parseInt(seqNo) + 1;
+				pst2 = con
+						.prepareStatement("update CLR_OUT_SEQ set seq_no= ? where CURDATE=to_date(?,'ddmmyyyy')");
+				pst2.setString(1, no + "");
+				pst2.setString(2, cur_date);
+				pst2.executeUpdate();
+				pst2.close();
+			} else {
+				pst2 = con
+						.prepareStatement("insert into CLR_OUT_SEQ values(to_date(?,'ddmmyyyy'),?)");
+				pst2.setString(1, cur_date);
+				pst2.setString(2, "0");
+				pst2.executeUpdate();
+				seqNo = lPad("0", 2, "0");
+				pst2.close();
+			}
+
+			pst2 = con
+					.prepareStatement("select * from BRANCHMSTR WHERE BRM_BRNCD=?");
+			pst2.setString(1, branch);
+			rs1 = pst2.executeQuery();
+			if (rs1.next()) {
+				SORTERID = rs1.getString(9);
+			}
+			if (rs1 != null)
+				rs1.close();
+			if (rs != null)
+				rs.close();
+			if (pst != null)
+				pst.close();
+			if (pst2 != null)
+				pst2.close();
+			if (con != null)
+				con.close();
+			seqNo = lPad(SORTERID, 6, "0");
+			seqNo = seqNo + "00";
+			seqNo = seqNo + lPad(no + "", 6, "0");
+
+		}// 1
+		catch (Exception e) {// 1
+			System.out
+					.println("Exception in Configuration.getItemSequenceNo()");
+			System.out
+					.println("Cant Find value for sequence no : Exception:::::"
+							+ e);
+			e.printStackTrace();
+		}// 1
+		finally {
+			try {
+				if (rs1 != null)
+					rs1.close();
+				if (rs != null)
+					rs.close();
+				if (pst != null)
+					pst.close();
+				if (pst2 != null)
+					pst2.close();
+				if (con != null)
+					con.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return seqNo;
+
+	}// getSequenceNo
+
+	public static String getIFSCCode(String branch) {// getIFSCCode
+		String seqNo = "";
+		String IFSC = "";
+		int no = 0;
+		Connection con = null;
+		PreparedStatement pst2 = null;
+		ResultSet rs1 = null;
+		try {// 1
+			con = getConnection();
+			pst2 = con
+					.prepareStatement("select * from BRANCHMSTR WHERE BRM_BRNCD=?");
+			pst2.setString(1, branch);
+			rs1 = pst2.executeQuery();
+			if (rs1.next()) {
+				IFSC = rs1.getString(11);
+				IFSC = rPad(IFSC, 11, " ");
+			}
+
+			if (rs1 != null)
+				rs1.close();
+
+			if (pst2 != null)
+				pst2.close();
+		}// 1
+		catch (Exception e) {// 1
+			System.out
+					.println("Cant Find value for sequence no : Exception:::::"
+							+ e);
+			IFSC = "" + e;
+			e.printStackTrace();
+		}// 1
+		finally {
+			try {
+				if (rs1 != null)
+					rs1.close();
+				if (pst2 != null)
+					pst2.close();
+				if (con != null)
+					con.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}// 1
+		return IFSC.trim();
+
+	}// getIFSCCode
+
+	public static String getDataFromCBSTextFile(String branchFolder)  {// getDataFromCBSTextFile
+
+		System.out.println("************** inside getDataFromCBSTextFile ***********111111"	+ branchFolder);
+		Connection con = null;
+		PreparedStatement ps = null, validationPs = null, errorPs = null;
+		PreparedStatement ps_duplicateCheques = null;
+		File cbs_clr_outwardFile = null;
+		int recordCounter = 0;
+		int insertResult = 0;
+		String returnMsg = "";
+		String readLine = "";
+		String readline1="";
+		String totalAmt="0";
+		//double newver=2.1;
+		String clo_payee_accno="";
+		try {
+			con = Configuration.getConnection();
+			con.setAutoCommit(false);
+			/*String OURVERSIONNO=Configuration
+					.getConfValByNm("CFG_OURVERSIONNO",con);*/
+			String ENCRY_DECRYPT_FLG=Configuration.getConfValByNm("CFG_ENCRY_DECRYPT_FLG", con);
+			String outwordPath=Configuration
+					.getConfValByNm("CFG_uploadpath_to_CHI",con);
+			String clr_outwardFilePath = outwordPath
+					+ branchFolder
+					+ "/ClearingOutward/";
+			System.out.print("clr_outwardFilePath=====" + clr_outwardFilePath);
+			cbs_clr_outwardFile = new File(clr_outwardFilePath);
+			String[] fileList = cbs_clr_outwardFile.list();
+			System.out.print("file count===" + fileList.length);
+			PreparedStatement ps_values = null;
+			String clyNo=null;
+			ResultSet rs=null;
+			// ps =
+			// con.prepareStatement("INSERT INTO CLEARINGOUTWARD(CLO_BOFD,CLO_CHQNO,CLO_SORTCD,CLO_TRANCD,CLO_AMOUNT,CLO_PAYEE_ACCNO,CLO_PAYEE_ACCNM,CLO_DATE_DDMMYYYY,CLO_BRANCH_CD,CLO_CONVERT_FLG,CLO_CLEARINGTYPE,CLO_DRAWEE_ACCNO) values(?,?,?,?,?,?,?,?,?,?,?,?)");
+			ps = con.prepareStatement("INSERT INTO CLEARINGOUTWARD(CLO_BOFD,CLO_CHQNO,CLO_SORTCD,CLO_TRANCD,CLO_AMOUNT,CLO_PAYEE_ACCNO,"
+					+ "CLO_PAYEE_ACCNM,CLO_DATE_DDMMYYYY,CLO_BRANCH_CD,CLO_CONVERT_FLG,CLO_CLEARINGTYPE,clo_olbc,clo_drawee_accno,CLO_ITEMSEQNO,CLO_CYCLNO) "
+					+ "values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");//(select BRM_BRNCD from BRANCHMSTR where BRM_MICRCD=?)
+			validationPs = con
+					.prepareStatement("insert into cbsFileValidation values(?,?,?,?,?,?,?)");
+			errorPs = con
+					.prepareStatement("insert into INVALIDCHEQUES values(?,?,?,?,?,?,?,?)");
+			ps_duplicateCheques = con
+					.prepareStatement("INSERT INTO DuplicateChequesTable values(?,?,?,?,?,?,?,?)");
+			if (fileList != null) {// 0
+				if (fileList.length != 0) {// 1
+					writeLog("fileList.length=" + fileList.length);
+					for (String fNm : fileList) {// 2
+						File _CBSfileName = new File(clr_outwardFilePath + fNm);
+						System.out.print("\n_CBSfileName:"+ _CBSfileName.getName());
+						// check is File
+						if (!_CBSfileName.isDirectory()) {// 3
+							System.out.print("_CBSfileName:"+ _CBSfileName.getName());
+							String nm = _CBSfileName.getName();
+							System.out.print("\n nm:"+ nm);
+							//Akshata 16/07/2026 
+							if (((nm.endsWith(".txt") || nm.endsWith(".TXT"  ))&& nm.startsWith("From_CBS_Clearing_Outward"))) 
+							{// 3.1
+								BufferedReader br = new BufferedReader(
+										new FileReader(clr_outwardFilePath + nm));
+								
+								
+								System.out.println("\n FileReader="+clr_outwardFilePath + nm);
+								
+								int noOfChequs = 0;
+								while ((readLine = br.readLine()) != null && (readLine.trim().length()!=0)) {// 4
+									recordCounter++;
+									//System.out.println("\n readline="+readLine.trim().length());
+									System.out.print("\n before readLine="+readLine);
+									System.out.print("\n @@@@ENCRY_DECRYPT_FLG="+ENCRY_DECRYPT_FLG);
+									if(ENCRY_DECRYPT_FLG.equalsIgnoreCase("Y"))
+									{
+										System.out.print("\n Inside if of encrpt decrypt ");
+										ps_values = con.prepareStatement("select hocust.decrypt_string('"+readLine+"') from dual");
+										rs = ps_values.executeQuery();
+										if (rs.next())
+										{
+											readLine = rs.getString(1);
+											System.out.print("\n after rs.getString(1)="+rs.getString(1));
+										}
+										System.out.print("\n after readLine="+readLine);
+									}
+									String CLO_BOFD = readLine.substring(0, 9);
+									// int bodf=Integer.parseInt(CLO_BOFD);//**
+									// don't remove this line
+									writeLog("CLO_BOFD:" + CLO_BOFD);
+									String CLO_CHQNO = readLine
+											.substring(9, 15);
+									System.out.println("\nCLO_CHQNO:" + CLO_CHQNO);
+									String CLO_SORTCD = readLine.substring(15,
+											24);
+									writeLog("CLO_SORTCD:"+ CLO_SORTCD);
+									System.out.print("\n11111111111111111111111111111111111111111111111");
+									
+									String CLO_BRANCH_CD=branchFolder;//getBranchCode(CLO_BOFD);
+									
+									String CLO_TRANCD = ""
+											+ Integer.parseInt(readLine.substring(24, 27));
+									writeLog("CLO_TRANCD:"+ CLO_TRANCD);
+									System.out.print("\n22222222222222222222222222222222222222222222222");
+									String CLO_AMOUNT = ""+ Long.parseLong(readLine.substring(27, 45));
+									
+									writeLog("CLO_AMOUNT:"+ CLO_AMOUNT);
+									String CLO_DRAWEE_ACCNO = readLine
+											.substring(45, 61);
+									CLO_DRAWEE_ACCNO=CLO_DRAWEE_ACCNO.replace("GL", "00");
+									CLO_DRAWEE_ACCNO=CLO_DRAWEE_ACCNO.replace("gl", "00");
+									
+									writeLog("CLO_PAYEE_ACCNO:"+ CLO_DRAWEE_ACCNO);
+									
+									String CLO_PAYEE_ACCNM = removeSplChar(readLine
+											.substring(61, 86));
+									CLO_PAYEE_ACCNM=CLO_PAYEE_ACCNM.trim();
+									writeLog("CLO_PAYEE_ACCNM"+ CLO_PAYEE_ACCNM);
+									//if(CLO_PAYEE_ACCNM.trim().length()==0)
+									//	CLO_CHQNO="-"+CLO_CHQNO.substring(1);
+									String clearingType = readLine.substring(
+											86, 88);
+									writeLog("clearingType"+ clearingType);
+									String clrType = clearingType;// "";
+									String clo_olbc = readLine.substring(88,
+											104);
+									if(readLine.length()>=124)
+									{
+										clo_payee_accno=readLine.substring(104,124).trim();
+										clo_payee_accno=clo_payee_accno.replace("GL", "00");
+										clo_payee_accno=clo_payee_accno.replace("gl", "00");
+									}
+									
+									if(readLine.length()>=125)
+									{
+										//System.out.print("readLine.substring(124,125).trim()=="+readLine.substring(124,125).trim());
+										clyNo=readLine.substring(124,125).trim();
+									}
+									System.out.print("clyNo="+clyNo);
+									
+									String itemSeqNo="";
+									System.out.println("clo_olbc==="+clo_olbc);
+									if(getConfValByNm("CFG_CBS_VENDOR",con).equalsIgnoreCase("LIST"))
+									{	
+										/*itemSeqNo = clo_olbc.substring(0, clo_olbc.indexOf("C")-1)
+											+ clo_olbc.substring(clo_olbc.indexOf("C")+1);*/
+										if(clearingType.equalsIgnoreCase("01"))
+										{	
+										
+											itemSeqNo = clo_olbc.split("C")[0]+lPad(""+Integer.parseInt(clo_olbc.split("C")[1]),6,"0");
+										}
+										else if(clearingType.equalsIgnoreCase("14"))
+										{	
+										
+											itemSeqNo = clo_olbc.split("C")[0]+lPad(""+Integer.parseInt(clo_olbc.split("C")[1]),6,"0");
+										}
+										else
+										{
+											itemSeqNo = clo_olbc.split("A")[0]+lPad(""+Integer.parseInt(clo_olbc.split("A")[1]),6,"0");
+										}
+										System.out.println("itemSeqNo==="+itemSeqNo);
+											
+									}
+									else
+									{
+										itemSeqNo = lPad(""+Long.parseLong(clo_olbc),14,"0");
+										if(itemSeqNo.length()>14)
+										{
+											itemSeqNo=itemSeqNo.substring(itemSeqNo.length()-14);
+										}
+									}
+									writeLog("clo_olbc" + clo_olbc);
+									System.out.print("herehehehrhehrhehrhehrhehrhehrhehrhehrhe");
+									System.out.println("itemSeqNo==="+itemSeqNo);
+									// we parse amount to long b'coz if amount
+									// size is 18 digits then it will not
+									// possible to parse it to the
+									// int . It will raise NFE
+									long co_amount = Long.parseLong(CLO_AMOUNT);
+									co_amount = co_amount / 100;
+									//int conf_amt_limit = Integer.parseInt(Configuration.getConfValByNm("CFG_COAMOUNT_LIMIT"));
+
+									/*
+									 * if(co_amount >= conf_amt_limit) { clrType
+									 * = "02"; //HIGH VALUE CHECK } else {
+									 * clrType = "01"; //LOW VALUE CHECK }
+									 */
+
+									writeLog("clrType to insert:"+ clrType);
+
+									String CLO_DATE_DDMMYYYY = Configuration
+											.getDDMMYYYY();
+									ps.setString(1, CLO_BOFD);
+									ps.setString(2, CLO_CHQNO);
+									ps.setString(3, CLO_SORTCD);
+									ps.setInt(4,
+											//lPad(CLO_TRANCD,3,"0")); //Change by SAM 24/11/2021
+											Integer.parseInt(CLO_TRANCD));
+									ps.setString(5, Long.parseLong(CLO_AMOUNT)+ "");
+									if(clo_payee_accno.length()>0)
+									{
+										ps.setString(6, clo_payee_accno);
+									}
+									else
+									{
+										ps.setString(6, lPad(CLO_DRAWEE_ACCNO,7,"0"));
+									}
+									ps.setString(7, CLO_PAYEE_ACCNM);
+									ps.setString(8, CLO_DATE_DDMMYYYY);
+									ps.setString(9, CLO_BRANCH_CD);//CLO_BOFD
+									ps.setString(10, "N");
+									ps.setString(11, clrType);
+									ps.setString(12, clo_olbc);
+									ps.setString(13, CLO_DRAWEE_ACCNO);
+									System.out.println("@@@@itemSeqNo==="+itemSeqNo);
+									ps.setString(14, itemSeqNo);
+									ps.setString(15, clyNo);
+									
+									try 
+									{
+										validationPs.setString(1, CLO_BOFD);
+										validationPs.setString(2, CLO_CHQNO);
+										validationPs.setString(3, CLO_SORTCD);
+										validationPs.setString(4, CLO_TRANCD);
+										validationPs.setString(5, CLO_AMOUNT);
+										validationPs.setString(6, CLO_DRAWEE_ACCNO);
+										validationPs.setString(7, CLO_PAYEE_ACCNM);
+										int tempCnt=validationPs.executeUpdate();
+										if ( tempCnt> 0) 
+										{
+											int ttempCnt=ps.executeUpdate();
+											writeLog("\nttempCnt="+ttempCnt);
+											insertResult = insertResult+ ttempCnt;
+										}
+									} 
+									catch (SQLException e) 
+									{
+										System.out.println("\n\t SQLException000:>>"+ e.getMessage());
+										writeLog("111111"+e);
+										// System.out.println("\n\t SQLException1111:>>"+e);
+										if (e.getMessage().contains("ORA-00001:")) 
+										{// 1
+																// throw new
+																// Exception("MyException in Configuration. getClearingOutwardFile()");*/
+																// ORA-00001:
+																// means unique
+																// constrint
+																// voilated...
+																// that means
+																// duplicate
+																// entry found
+											ps_duplicateCheques.setString(1,
+													CLO_BOFD);
+											ps_duplicateCheques.setString(2,
+													CLO_CHQNO);
+											ps_duplicateCheques.setString(3,
+													CLO_SORTCD);
+											ps_duplicateCheques.setString(4,
+													CLO_TRANCD);
+											ps_duplicateCheques.setString(5,
+													CLO_AMOUNT);
+											ps_duplicateCheques.setString(6,
+													CLO_DRAWEE_ACCNO);
+											ps_duplicateCheques.setString(7,
+													CLO_PAYEE_ACCNM);
+											ps_duplicateCheques.setString(8,
+													CLO_DATE_DDMMYYYY);
+											if (ps_duplicateCheques
+													.executeUpdate() > 0) {
+												insertResult++;
+												System.out
+														.println("\n\t Duplicate Record Inserted..");
+											}
+										}// 1
+											// ORA-01722: means invalid number
+											// that means a numeric string
+											// contains
+											// invalid data except '.'
+											// ORA-01438: value larger than
+											// specified precision allowed for
+											// this column
+										if (e.getMessage().contains("ORA-01722:")
+												|| e.getMessage().contains("ORA-01438")) 
+										{// 2
+											errorPs.setString(1, CLO_BOFD);
+											errorPs.setString(2, CLO_CHQNO);
+											errorPs.setString(3, CLO_SORTCD);
+											errorPs.setString(4, CLO_TRANCD);
+											errorPs.setString(5, CLO_AMOUNT);
+											errorPs.setString(6,
+													CLO_DRAWEE_ACCNO);
+											errorPs.setString(7,
+													CLO_PAYEE_ACCNM);
+											errorPs.setString(8,
+													CLO_DATE_DDMMYYYY);
+											try {
+												if (errorPs.executeUpdate() > 0) {
+													insertResult++;
+													System.out
+															.println("\n\t Invalid Record inserted.");
+												} else {
+													System.out
+															.println("\n\t Invalid Record Not inserted.");
+												}
+											} catch (SQLException se) {
+												writeLog("22222"+se);
+											}
+										}// 2
+									}
+									if (insertResult > 0)
+										System.out
+												.println("Record is inserted");
+								}// 4
+								br.close();
+								
+								writeLog("Before File Delete");
+								if (insertResult > 0) 
+								{
+									//if(getConfValByNm("CFG_CBS_VENDOR", con).equalsIgnoreCase("KORAS"))
+										File source=null;
+										
+										if(!new File(outwordPath+"/VERIFY/").exists())
+										{	
+											Configuration.writeLog("verify create==="+new File(outwordPath+"/VERIFY/").mkdir());
+										}
+															
+										source= new File(outwordPath+"/VERIFY/"+branchFolder+"_Verify.txt");
+										System.out.println("source==="+source);
+										
+										if(source.exists())
+										{
+											FileUtils.forceDelete(source);
+											
+										}
+										FileUtils.moveFile(_CBSfileName,source);
+										
+										//Path sourcePath=Paths.get(clr_outwardFilePath+"From_CBS_Clearing_Outward.txt");
+										//Path destinationPath=Paths.get(outwordPath+"/VERIFY/"+branchFolder+"_Verify.txt");
+										//Files.move(sourcePath,destinationPath,StandardCopyOption.REPLACE_EXISTING);
+									
+									/*else
+									{
+										FileUtils.forceDelete(_CBSfileName);
+										System.out.println("After CBS File Delete ");
+									}*/
+								}
+								// System.out.println("After File Delete flg:" +
+								// flg);
+							}// 3.1
+//							else {
+//								throw new MyException(
+//										"CBS File Name Should Be From_CBS_Clearing_Outward.txt");
+//							}
+						}// 3
+					}// 2
+				}// 1
+			}// 0
+			else {// 0
+				throw new NoFilesAtUploadPathException(
+						"NO Files At Upload Path");
+			}// 0
+			writeLog("recordCounter:" + recordCounter);
+			writeLog("insertResult:" + insertResult);
+			/*
+			 * if (recordCounter == 0 && insertResult == 0) { //returnMsg =
+			 * "CBSFileNotFound"; returnMsg = "SUCCESS"; } else if (insertResult
+			 * == 0) { //returnMsg = "Record Not Inserted."; returnMsg =
+			 * "SUCCESS"; //returnMsg = "RecordNotInsert"; } else { returnMsg =
+			 * "SUCCESS"; }
+			 */
+			try {
+				ps.close();
+				con.commit();
+				con.close();
+			} catch (Exception e) {
+				con.close();
+				e.printStackTrace();
+			}
+			
+			returnMsg = "SUCCESS";
+		} catch (NoFilesAtUploadPathException e) {
+			System.out
+					.println("\nNoFilesAtUploadPathException in getDataFromCBSTextFile of getClearingOutwardFile::>>\n"
+							+ e);
+			returnMsg = e.getMessage();
+			writeLog("&&&&&&&&&"+e);
+			try {
+				con.rollback();
+			} catch (SQLException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		} catch (NumberFormatException e) {
+			System.out
+					.println("\nNumberFormatException in getDataFromCBSTextFile of getClearingOutwardFile::>>\n"
+							+ e);
+			returnMsg = "CBS Text File Is Not In Proper Format. Check From_CBS_Clearing_Outward.txt File.";
+			e.printStackTrace();
+			writeLog("^^^^^^^^"+e);
+			try {
+				con.rollback();
+			} catch (SQLException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		} catch (FileNotFoundException e) {
+			System.out
+					.println("\nFileNotException in getDataFromCBSTextFile of getClearingOutwardFile::>>\n"
+							+ e);
+			returnMsg = "CBS File Not Found.";
+			writeLog("%%%%%%%%"+e);
+			try {
+				con.rollback();
+			} catch (SQLException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		} catch (StringIndexOutOfBoundsException e) {
+			System.out
+					.println("\nStringIndexOutOfBoundsException in getDataFromCBSTextFile of getClearingOutwardFile::>>\n"
+							+ e);
+			 e.printStackTrace();
+			//returnMsg ="CBS File Is Not In Proper Format";
+			returnMsg = "CBS Text File Is Not In Proper Format";
+			//writeFaultyCheque(readLine);
+			writeLog("$$$$$"+e);
+			try {
+				con.rollback();
+			} catch (SQLException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		} catch (NullPointerException e) {
+			
+			System.out
+					.println("\nNullPointerException in getDataFromCBSTextFile of getClearingOutwardFile::>>\n"
+							+ e);
+			returnMsg = "CBS File Is Not In Proper Format due to Empty Data";
+			writeLog("----"+e);
+			e.printStackTrace();
+			try {
+				con.rollback();
+			} catch (SQLException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		} catch (MyException e) {
+			System.out
+					.println("\nMyException in getDataFromCBSTextFile of getClearingOutwardFile::>>\n"
+							+ e);
+			returnMsg = e.getMessage();
+			e.printStackTrace();
+			writeLog("!!!!!!"+e);
+			try {
+				con.rollback();
+			} catch (SQLException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		} catch (Exception e) {
+			System.out
+					.println("\nException in getDataFromCBSTextFile of getClearingOutwardFile::>>"
+							+ e);
+			returnMsg = "FAIL";
+			e.printStackTrace();
+			writeLog("@@@@"+e);
+			try {
+				con.rollback();
+			} catch (SQLException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		} finally {
+			try {
+				if (ps != null)
+					ps.close();
+				if (validationPs != null)
+					validationPs.close();
+				if (errorPs != null)
+					errorPs.close();
+				if (ps_duplicateCheques != null)
+					ps_duplicateCheques.close();
+				if (con != null)
+					con.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}// 1
+		System.out
+				.println("\n\nExit From getDataFromCBSTextFile returnMsg:::>>"
+						+ returnMsg);
+
+		return returnMsg;
+	}// end getDataFromCBSTextFile
+
+	public static void writeFaultyCheque(String readLine) {
+		writeLog("\n\ninside writeFaultyCheque:::");
+		try {// 1
+			PrintWriter pw = new PrintWriter(new FileWriter(new File(
+					"CtsFaultyChequeLog.txt")));
+			pw.println(readLine);
+			pw.close();
+		}// 1
+		catch (Exception e) {// 1
+			e.printStackTrace();
+			writeLog("\n\nException in writeFaultyCheque:::>>" + e);
+		}// 1
+	}// end writeFaultyCheque
+		// destType 'U' for CFG_ARCUPLOADPATH_TO_CHI , 'D' for
+		// CFG_ARCDOWNLOADPATH_FROM_CHI
+
+	public static boolean manualArchive(String sourceFile, String destType) throws SQLException {// manualArchive
+
+		String destFile = "", destDir = "";
+		Connection con=getConnection();
+		if (destType.equalsIgnoreCase("U")) {
+			destFile = sourceFile.replace(
+					Configuration.getConfValByNm("CFG_UPLOADPATH_TO_CHI",con),
+					Configuration.getConfValByNm("CFG_ARCUPLOADPATH_TO_CHI",con)
+							+ getDDMMYYYY() + "/");
+			// destFile
+			// =Configuration.getConfValByNm("CFG_ARCUPLOADPATH_TO_CHI")+
+			// getDDMMYYYY()+"/";
+		} else if (destType.equalsIgnoreCase("D")) {
+			destFile = sourceFile.replace(
+					Configuration.getConfValByNm("CFG_DOWNLOADPATH_FROM_CHI",con),
+					Configuration
+							.getConfValByNm("CFG_ARCDOWNLOADPATH_FROM_CHI",con)
+							+ getDDMMYYYY() + "/");
+		}
+
+		writeLog("destFile:>>>>>" + destFile);
+
+		int index = destFile.lastIndexOf("/");
+		destDir = destFile.substring(0, index);
+		// System.out.println("destDir:"+destDir);
+		if (!new File(destDir).exists()) {
+			new File(destDir).mkdirs();
+		}
+		writeLog("\n\nsourceFile:" + sourceFile);
+		writeLog("\n\ndestFile:" + destFile);
+		con.close();
+		return new File(sourceFile).renameTo(new File(destFile));
+
+	}// manualArchive
+
+	// destType 'U' for CFG_ARCUPLOADPATH_TO_CHI , 'D' for
+	// CFG_ARCDOWNLOADPATH_FROM_CHI
+	public static boolean manualArchive_old(String srcPath, String destType,
+			String isOnlyFiles) throws SQLException {// manualArchive
+
+		String destPath = "";
+		Connection con=getConnection();
+		if (destType.equalsIgnoreCase("U")) {
+			destPath = Configuration.getConfValByNm("CFG_ARCUPLOADPATH_TO_CHI",con)
+					+ getDDMMYYYY() + "/";
+		} else if (destType.equalsIgnoreCase("D")) {
+			destPath = Configuration
+					.getConfValByNm("CFG_ARCDOWNLOADPATH_FROM_CHI",con)
+					+ getDDMMYYYY() + "/";
+		}
+
+		File srcFolder = new File(srcPath);
+		File[] listSrcFiles = srcFolder.listFiles();
+
+		File sourceFile = null;
+		File destFile = null;
+		for (int i = 0; i < listSrcFiles.length; i++) {// for
+			writeLog(srcPath + listSrcFiles[i].getName() + "---"+ listSrcFiles[i].isDirectory());
+
+			if (isOnlyFiles.equalsIgnoreCase("Y")) {// 1
+				if (!listSrcFiles[i].isDirectory()) {// 1.2
+					sourceFile = new File(srcPath + listSrcFiles[i].getName());
+				}// 1.2
+			}// 1
+			else {// 1
+				sourceFile = new File(srcPath + listSrcFiles[i].getName());
+			}// 1
+
+			if (!new File(destPath).exists()) {// 2
+				new File(destPath).mkdirs();
+			}// 2
+
+			destFile = new File(destPath + listSrcFiles[i].getName());
+			sourceFile.renameTo(destFile);
+		}// for
+		con.close();
+		return true;
+
+	}// manualArchive
+
+	/*public static String getBranchCode(String rtmCode) {
+		String retVal = null;
+		ResultSet rs = null;
+		PreparedStatement ps = null;
+		Connection con = null;
+		try {
+			con = getConnection();
+			ps = con.prepareStatement("select BRM_BRNCD from BRANCHMSTR where BRM_MICRCD=?");
+			ps.setString(1, rtmCode);
+			rs = ps.executeQuery();
+
+			if (rs.next())
+				retVal = rs.getString(1);
+
+			if (retVal == null)
+				retVal = "000000000";
+		} catch (Exception e) {
+			System.out
+					.println("Exception in Configuration.getDraweeSortCode():"
+							+ e);
+			retVal = "000000000";
+		} finally {
+			try {
+				if (rs != null)
+					rs.close();
+				if (ps != null)
+					ps.close();
+				if (con != null)
+					con.close();
+			} catch (Exception e) {
+			}
+		}
+		return retVal;
+	}// end
+*/	
+	public static void writeLog(String str) {
+		// System.out.println("Inside writeLog");
+		PrintWriter pw;
+		Date today = new Date();
+		String toDate = "" + today.getDate() + "-" + (today.getMonth() + 1)
+				+ "-" + (today.getYear() + 1900);
+		String path="";
+		try {
+				Properties prop = new Properties();
+				InputStream inputStream = Configuration.class.getClassLoader()
+					.getResourceAsStream("/common.properties");
+			prop.load(inputStream);
+			path=ListEncryption.decryptData(prop.getProperty("apppath"));
+			path = path+"/logs/";
+ 		//	System.out.println("path=="+path);			
+			if(path.length()>0)
+				new File(path).mkdirs();
+			pw = new PrintWriter(new FileWriter(new File( path+"log" + toDate
+							+ ".txt"), true), true);
+
+			// pw=new PrintWriter(new FileWriter(new
+			// File("LISTlog"+toDate+".txt"),true),true);
+			// System.out.println("Debug:\t"+pw.getClass().getClass().getCanonicalName());
+
+			pw.println(str);
+			pw.flush();
+			pw.close();
+			
+
+			// System.out.println("Return from writeLog");
+		} catch (Exception e) {
+			//writeLog("Exception in writeLog.\n" + e.getClass() + "\t"+ e.getMessage());
+			e.printStackTrace();
+			try {
+				
+				pw = new PrintWriter(
+						new File("/var/lib/apache-tomcat-6.0.35/webapps/CTS/errorlog.txt"));
+				// pw=new PrintWriter(new File("LISTerrorlog.txt"));
+				pw.println(toDate + "     " + e);
+				pw.flush();
+				pw.close();
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+
+				// e1.printStackTrace();
+			}
+		}
+	}
+
+	public static String getDraweeSortCode(String rtmCode) {
+		String retVal = null;
+		ResultSet rs = null;
+		PreparedStatement ps = null;
+		Connection con = null;
+		try {
+			con = getConnection();
+			ps = con.prepareStatement("select BRM_MEMBERBNKSORTCODE from BRANCHMSTR where BRM_MICRCD=?");
+			ps.setString(1, rtmCode);
+			rs = ps.executeQuery();
+
+			if (rs.next())
+				retVal = rs.getString(1);
+
+			if (retVal == null)
+				retVal = "000000000";
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out
+					.println("Exception in Configuration.getDraweeSortCode():"
+							+ e);
+			retVal = "000000000";
+		} finally {
+			try {
+				if (rs != null)
+					rs.close();
+				if (ps != null)
+					ps.close();
+				if (con != null)
+					con.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return retVal;
+	}// end
+	
+	public static String prepareImageData_DigitalCheck(String BRNCD) {// 2
+		System.out
+				.println(" inside prepareImageData_DigitalCheck ------------------------------------------");
+		String retMess = "SUCCESS";
+		
+		Connection con = null;
+		PreparedStatement pstFTif = null, pstRTif=null,pstFJpg=null,selPst = null;
+		String micrFile = "", itemFileName = "";
+		long sys_cur_millis = System.currentTimeMillis();
+		List<String> chequeList = new ArrayList<String>();
+		try {// 3
+			con = getConnection();
+			String uploadpath_to_chi = getConfValByNm("CFG_uploadpath_to_chi",con);
+			// String
+			// selQry="select to_number(CLO_CHQNO)||to_number(CLO_SORTCD)||to_number(CLO_PAYEE_ACCNO)||to_number(CLO_TRANCD)||substr(CLO_DATE_DDMMYYYY,-4)||substr(CLO_DATE_DDMMYYYY,3,2)||substr(CLO_DATE_DDMMYYYY,0,2) chkStr from CLEARINGOUTWARD where CLO_DATE_DDMMYYYY=?";
+			String selQry = "select CLO_CHQNO,CLO_SORTCD,clo_drawee_accno,CLO_TRANCD,substr(CLO_DATE_DDMMYYYY,-4)||substr(CLO_DATE_DDMMYYYY,3,2)||substr(CLO_DATE_DDMMYYYY,0,2) datestr, CLO_OLBC from CLEARINGOUTWARD where CLO_DATE_DDMMYYYY=? and CLO_CONVERT_FLG='N'";
+			/*String qry = "update clearingoutward  set clo_img_frnt_bw=?, clo_img_back_bw=?, clo_img_frnt_gr=?, "
+					+ "clo_img_back_gr=?, CLO_IQASTATUS=?, CLO_IQARESULTS=?, CLO_PPRTOFOLLOW=?,CLO_ITEMSEQNO=? "
+					+ "where  clo_date_ddmmyyyy=?  and  clo_chqno=? and clo_sortcd=? and CLO_TRANCD=?  ";
+			pst = con.prepareStatement(qry);*/
+			
+			
+			String qry = "update clearingoutward  set clo_img_frnt_bw=?, clo_img_back_gr='NA', CLO_IQASTATUS='SUCCESS', "
+					+ "CLO_IQARESULTS='SUCCESS', CLO_PPRTOFOLLOW=? where  clo_date_ddmmyyyy=?  and  "
+					+ "clo_chqno=? and clo_sortcd=? and CLO_TRANCD=?  ";
+			
+			pstFTif = con.prepareStatement(qry);
+			
+			qry = "update clearingoutward  set clo_img_back_bw=?, clo_img_back_gr='NA', CLO_IQASTATUS='SUCCESS', "
+					+ "CLO_IQARESULTS='SUCCESS', CLO_PPRTOFOLLOW=? where  clo_date_ddmmyyyy=?  and  "
+					+ "clo_chqno=? and clo_sortcd=? and CLO_TRANCD=?  ";
+			pstRTif = con.prepareStatement(qry);
+			
+			qry = "update clearingoutward  set clo_img_frnt_gr=?, clo_img_back_gr='NA', CLO_IQASTATUS='SUCCESS', "
+					+ "CLO_IQARESULTS='SUCCESS', CLO_PPRTOFOLLOW=? where  clo_date_ddmmyyyy=?  and  "
+					+ "clo_chqno=? and clo_sortcd=? and CLO_TRANCD=?  ";
+			pstFJpg = con.prepareStatement(qry);
+			
+			
+			
+			
+			
+
+			new File(uploadpath_to_chi + BRNCD
+					+ "/ClearingOutward/Images/Thumbs.db").delete();
+			new File(uploadpath_to_chi + BRNCD+ "/ClearingOutward/MICR.txt").delete();
+			String fileList[] = new File(uploadpath_to_chi + BRNCD
+					+ "/ClearingOutward/Images/").list();
+			writeLog("fileList.length :" + fileList.length);
+			int noOfCheques = -1;
+
+			selPst = con.prepareStatement(selQry);
+			selPst.setString(1, Configuration.getDDMMYYYY());
+			ResultSet selRS = selPst.executeQuery();
+			while (selRS.next()) {
+				String ISN=selRS.getString(6);
+				String ssss=selRS.getString(1) + "#" + selRS.getString(2)
+						+ "#" + selRS.getString(3) + "#" + selRS.getString(4)
+						+ "#" + selRS.getString(5) + "#" +
+						(ISN.substring(0,ISN.indexOf("C")-1)+ISN.substring(ISN.indexOf("C")+2));
+				chequeList.add(ssss);
+				writeLog("\n\n"+ssss+"\n\n");
+			}
+
+			selRS.close();
+			selPst.close();
+			// System.out.println("fileList.length % 4 :"+fileList.length % 4);
+			String newImgBackGr = "", newImgFrntGr = "", newImgBackBw = "", newImgFrntBw = "";
+			String chequeNames = "";
+			String itemMicrFileName = "";
+
+			String folderpath1 = uploadpath_to_chi + BRNCD
+					+ "/ClearingOutward/Images/";
+			String folderpath2 = uploadpath_to_chi + BRNCD
+					+ "/ClearingOutward/Images/";
+			if (new File(folderpath1).exists()
+					&& new File(folderpath1).list().length > 0) {//
+				String fileNames[] = new File(uploadpath_to_chi + BRNCD
+						+ "/ClearingOutward/Images/").list();
+				noOfCheques = fileNames.length;
+				writeLog("noOfCheques=" + noOfCheques);
+
+				int counter = 0, lineCnt = -1;
+				for (int i = 0; i < noOfCheques; i++) {
+					counter = 0;
+					itemFileName = fileNames[i];
+					/*if(itemFileName.startsWith("temp"))
+					{
+						new File(itemFileName).delete();
+						break;
+					}
+					else*/
+					if (itemFileName.startsWith("Tif200F")) {
+						for (int chqCnt = 0; chqCnt < chequeList.size(); chqCnt++) {
+							String[] compareStr = chequeList.get(chqCnt).split(
+									"#");
+							if (itemFileName.startsWith("Tif200F"
+									+ Long.parseLong(compareStr[0])
+									+ Long.parseLong(compareStr[1]))
+									&& itemFileName.indexOf(""
+											+ Long.parseLong(compareStr[3])
+											+ Long.parseLong(compareStr[4])) > 0)
+							{
+								counter = 1;
+								lineCnt = chqCnt;
+								break;
+							}
+						}
+						if (counter == 1) {
+							String[] compareStr = chequeList.get(lineCnt)
+									.split("#");
+							writeLog(chequeList.get(lineCnt));
+							String imgFrntBw = "";
+							String imgName = itemFileName.split("Tif200F")[1];
+							imgName = imgName
+									.substring(0, imgName.length() - 4);
+							imgFrntBw = "Tif200F" + imgName + ".tif";
+							if (!(new File(folderpath2 + imgFrntBw).exists()) && new File(folderpath2 + imgFrntBw).length()==0 ) {// if
+								imgFrntBw = "";
+							}
+							else {
+								String imgNameStr = compareStr[0]
+										+ compareStr[1] + compareStr[2]
+										+ compareStr[3];
+								newImgFrntBw = "F" + imgNameStr + ".tif";
+								boolean one = new File(folderpath2 + imgFrntBw)
+										.renameTo(new File(folderpath2
+												+ newImgFrntBw));
+								String CLO_PPRTOFOLLOW = "N";
+								int trNo = Integer.parseInt(compareStr[3]);
+
+								if ((trNo >= 20 && trNo <= 27 && trNo!=23)) {
+									CLO_PPRTOFOLLOW = "Y";
+								}
+								pstFTif.setString(1, newImgFrntBw);
+								pstFTif.setString(2, CLO_PPRTOFOLLOW);
+								pstFTif.setString(3, Configuration.getDDMMYYYY());
+								pstFTif.setString(4, compareStr[0]);
+								pstFTif.setString(5, compareStr[1]);
+								pstFTif.setString(6, compareStr[3]);
+
+								int a = pstFTif.executeUpdate();
+								writeLog("pstFTif Count for "+compareStr[0]+"--"+compareStr[1]+"--"+compareStr[3]+"  is="+a);
+							}
+						}						
+					}
+
+					else if (itemFileName.startsWith("Tif200B")) {
+						for (int chqCnt = 0; chqCnt < chequeList.size(); chqCnt++) {
+							String[] compareStr = chequeList.get(chqCnt).split(
+									"#");
+							if (itemFileName.startsWith("Tif200B"
+									+ Long.parseLong(compareStr[0])
+									+ Long.parseLong(compareStr[1]))
+									&& itemFileName.indexOf(""
+											+ Long.parseLong(compareStr[3])
+											+ Long.parseLong(compareStr[4])) > 0)
+							{
+								counter = 1;
+								lineCnt = chqCnt;
+								break;
+							}
+						}
+						if (counter == 1) {
+							String[] compareStr = chequeList.get(lineCnt)
+									.split("#");
+							String imgBackBw = "";//, imgFrntGr = "", imgBackGr = "";
+							
+							String imgName = itemFileName.split("Tif200B")[1];
+							imgName = imgName
+									.substring(0, imgName.length() - 4);
+							imgBackBw = "Tif200B" + imgName + ".tif";
+							if (!(new File(folderpath2 + imgBackBw).exists()) && new File(folderpath2 + imgBackBw).length()==0) {
+								imgBackBw = "";
+							}// if
+							else {
+								String imgNameStr = compareStr[0]
+										+ compareStr[1] + compareStr[2]
+										+ compareStr[3];
+								newImgBackBw = "R" + imgNameStr + ".tif";
+								boolean two = new File(folderpath2 + imgBackBw)
+										.renameTo(new File(folderpath2
+												+ newImgBackBw));
+								String CLO_PPRTOFOLLOW = "N";
+								int trNo = Integer.parseInt(compareStr[3]);
+
+								if ((trNo >= 20 && trNo <= 27 && trNo!=23)) {
+									CLO_PPRTOFOLLOW = "Y";
+								}
+
+								writeLog(qry);
+								pstRTif.setString(1, newImgBackBw);
+								pstRTif.setString(2, CLO_PPRTOFOLLOW);
+								pstRTif.setString(3, Configuration.getDDMMYYYY());
+								pstRTif.setString(4, compareStr[0]);
+								pstRTif.setString(5, compareStr[1]);
+								pstRTif.setString(6, compareStr[3]);
+
+								int a = pstRTif.executeUpdate();
+								writeLog("pstRTif Count for "+compareStr[0]+"--"+compareStr[1]+"--"+compareStr[3]+"  is="+a);
+							}
+						}
+					}
+					else if (itemFileName.startsWith("Jpg100F")) {
+						for (int chqCnt = 0; chqCnt < chequeList.size(); chqCnt++) {
+							String[] compareStr = chequeList.get(chqCnt).split(
+									"#");
+							if (itemFileName.startsWith("Jpg100F"
+									+ Long.parseLong(compareStr[0])
+									+ Long.parseLong(compareStr[1]))
+									&& itemFileName.indexOf(""
+											+ Long.parseLong(compareStr[3])
+											+ Long.parseLong(compareStr[4])) > 0)
+							{
+								counter = 1;
+								lineCnt = chqCnt;
+								break;
+							}
+						}
+						if (counter == 1) {
+							String[] compareStr = chequeList.get(lineCnt)
+									.split("#");
+							String  imgFrntGr = "";
+							String imgName = itemFileName.split("Jpg100F")[1];
+							imgName = imgName
+									.substring(0, imgName.length() - 4);
+							imgFrntGr = "Jpg100F" + imgName + ".jpg";
+							if (!(new File(folderpath2 + imgFrntGr).exists()) && new File(folderpath2 + imgFrntGr).length()==0) {
+								imgFrntGr = "";
+							}// if
+							else {
+								String imgNameStr = compareStr[0]
+										+ compareStr[1] + compareStr[2]
+										+ compareStr[3];
+								newImgFrntGr = "F" + imgNameStr + "G.jpg";
+								boolean three = new File(folderpath2
+										+ imgFrntGr).renameTo(new File(
+										folderpath2 + newImgFrntGr));
+								writeLog("three===" + three);
+								String CLO_PPRTOFOLLOW = "N";
+								int trNo = Integer.parseInt(compareStr[3]);
+								if ((trNo >= 20 && trNo <= 27 && trNo!=23)) {
+									CLO_PPRTOFOLLOW = "Y";
+								}
+								pstFJpg.setString(1, newImgFrntGr);
+								pstFJpg.setString(2, CLO_PPRTOFOLLOW);
+								pstFJpg.setString(3, Configuration.getDDMMYYYY());
+								pstFJpg.setString(4, compareStr[0]);
+								pstFJpg.setString(5, compareStr[1]);
+								pstFJpg.setString(6, compareStr[3]);
+
+								int a = pstFJpg.executeUpdate();
+								writeLog("pstFJpg Count for "+compareStr[0]+"--"+compareStr[1]+"--"+compareStr[3]+"  is="+a);
+							}
+						}
+					}
+				}// 5
+				con.close();
+				retMess = "SUCCESS";
+			}
+		}// 3
+		catch (NullPointerException w) {// 3
+			System.out
+					.println("\n\nNullPointerException in prepareImageData_DigitalCheck configuration::::"
+							+ w + "\n\n");
+			retMess = "No File(s) At Upload Path";
+			w.printStackTrace();
+		}// 3
+		catch (Exception e) {// 3
+			e.printStackTrace();
+			System.out
+					.println("\n\nException in prepareImageData_DigitalCheck configuration::::"
+							+ e + "\n\n");
+			retMess = "FAIL.";	
+		}// 3
+		finally {// 3
+			try {
+				if (pstFJpg != null)
+					pstFJpg.close();
+				if (pstFTif != null)
+					pstFTif.close();
+				if (pstRTif != null)
+					pstRTif.close();
+				if (con != null)
+					con.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}// 3
+		return retMess;
+	}// 2
+	public static String removeSplChar(String str)
+	{
+		String splStr="~!@#$%^&*()_+{}[]:|/\";',./<>?";
+		if(str.length()>0)
+ 		{
+			if(splStr.indexOf(str.charAt(0))>0)
+			{
+				str=str.substring(1,str.length());
+				writeLog("2="+str);
+			}
+			str=str.replaceAll("[^a-zA-Z0-9 ]","");
+    		writeLog(str);
+      	}
+		return str;
+	}
+	public static boolean moveMicrFiles(String path)
+	{
+		boolean flg=true;
+		
+		//System.out.println("path " + path);
+		try
+		{
+			File clrOutPath = new File(path);
+			File[] listOfMicrFolder = clrOutPath.listFiles();
+			//System.out.println("length " + listOfMicrFolder.length);
+				for (int i = 0; i < listOfMicrFolder.length; i++)
+				{
+					//System.out.println("Directory " + listOfMicrFolder[i].getName());
+				  	if (listOfMicrFolder[i].isDirectory() && listOfMicrFolder[i].getName().indexOf("MICRWaveforms")>-1 && listOfMicrFolder[i].getName().length()>14)
+				  	{
+						
+						File MicrFolderPath = new File(path+listOfMicrFolder[i].getName());
+						File[] listOfMicrFiles = MicrFolderPath.listFiles();
+						for (int j = 0; j < listOfMicrFiles.length; j++)
+						{
+							//System.out.println("File " + listOfMicrFiles[j].getName());
+							FileUtils.copyFile(new File(path+listOfMicrFolder[i].getName()+"/"+listOfMicrFiles[j].getName()), new File(path+"/MICRWaveforms/"+listOfMicrFiles[j].getName()));
+						}
+				  	}
+				}
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			flg=false;
+		}
+		return flg;
+	}
+	public static boolean isProcessed(String filenm)
+	{
+		Connection con = null;int cnt=0;boolean flg = false;
+		try
+		{
+			System.out.println("isProceeed  filenm=="+filenm);
+			con = getConnection();
+		String selQry = "select count(*) from CLEARINGINWARD where  CLI_XMLFILENAME=?";
+		PreparedStatement selPst= con.prepareStatement(selQry);
+				selPst.setString(1,filenm);
+				ResultSet selRS = selPst.executeQuery();
+				while (selRS.next()) {
+					 cnt=selRS.getInt(1);					
+				}
+				System.out.println("cnt---"+cnt);
+				selRS.close();
+				selPst.close();
+				if(cnt>0) {
+					flg= true;
+				}
+				else {
+					flg= false;
+				}
+				
+		}
+		catch(Exception e) {e.printStackTrace();}
+		return flg;
+		
+	}
+}// end class
+
+class MyException extends RuntimeException {
+	MyException(String errMessage) {
+		super(errMessage);
+	}
+}// end MyException
+
+/*
+ * public static String convertToJpg(String FileNm) { String
+ * extention=FileNm.substring(FileNm.lastIndexOf(".")); String
+ * jpgFileName=FileNm.toLowerCase().replaceAll(extention,".jpg"); try {
+ * FileInputStream fis=new FileInputStream (FileNm); FileOutputStream fos=new
+ * FileOutputStream (jpgFileName); int i; while((i=fis.read())!=-1) {
+ * fos.write(i); } fis.close(); fos.close(); } catch(Exception e) {
+ * System.out.println("Exception::::"+e); jpgFileName=""+e; } return
+ * jpgFileName; }
+ */
+
+/*
+ * public static reverse(String str) {//2 String revStr=""; try {//3 for(int
+ * i=str.length()-1;i>=;i--) {
+ * 
+ * } }//3 catch(Exception e) {//3 System.out.println("Exception::::"+e); }//3
+ * }//2
+ */
+
+/*
+ * public static String moveToArchive(String UpOrDown) {//2 String retStr="";
+ * String srcFilePath=""; String destFilePath=""; try {//3
+ * if(UpOrDown.equalsIgnoreCase("U")) {//4
+ * destFilePath=getConfValByNm("CFG_ARCuploadpath_to_chi");
+ * srcFilePath=getConfValByNm("CFG_uploadpath_to_chi"); }//4 else {//4
+ * destFilePath=getConfValByNm("CFG_ARCdownloadpath_from_chi");
+ * srcFilePath=getConfValByNm("CFG_downloadpath_from_chi"); }//4
+ * destFilePath=destFilePath+getDDMMYYYY(); new File(destFilePath).mkdir();
+ * //new File(destFilePath+"/"+getDDMMYYYY()).mkdir(); String fileNames[]=new
+ * File(srcFilePath).list(); int i=0; for(i=0;i<fileNames.length;i++) {//4
+ * String file=fileNames[i]; FileInputStream fis=new FileInputStream
+ * (srcFilePath+file); FileOutputStream fos=new FileOutputStream
+ * (destFilePath+"/"+file); int readCnt=-1; while((readCnt=fis.read())!=-1) {//5
+ * fos.write(readCnt); }//5 fis.close(); fos.close(); new
+ * File(srcFilePath+file).delete(); }//4 retStr="SUCCESS"; }//3 catch (Exception
+ * e) {//3 System.out.println("Cant Move To Archive EXCEPTION:::::"+e); }//3
+ * return retStr; }
+ */
+

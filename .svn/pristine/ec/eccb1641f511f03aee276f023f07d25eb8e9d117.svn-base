@@ -1,0 +1,432 @@
+<%@ page import="java.io.*,java.util.*, jakarta.servlet.*" %>
+<%@ page import="jakarta.servlet.http.*" %>
+<%@ page import="java.net.SocketException"%>
+<%@ page import="org.apache.commons.net.ftp.*" %>
+<%@ page import="org.apache.commons.net.*" %>
+<%-- <%@ page import="org.apache.commons.fileupload.servlet.*" %> --%>
+<%@ page import="org.apache.commons.io.output.*" %>
+<%@ page import="cts.*" %>
+<%@ page import="java.sql.*" %>
+<%!	
+	
+	
+	public String getBranchFiles(String ftpUrl,int ftpPort,String ftpUser,String ftpPassword,String branchCode,String BRM_IFSCCODE)
+	{//getBranchFiles
+			PrintWriter fos=null;
+			int cnt=0;
+			boolean cbsTxtFileflg=false;
+			StringBuffer disconnectedBranchesStatus=new StringBuffer();
+			String msg="";
+			int cbsFileCnt=0;
+			System.out.println("\n\nIn getBranchFiles");
+			int imageFileCount=0;
+			FTPClient ftpClient = new FTPClient();
+			System.out.println("\n\n111");
+			FileInputStream inputStream = null;
+			
+			try
+			{
+				ftpClient.connect(ftpUrl,ftpPort);
+				System.out.println("\n\nConnected To "+branchCode+"Branch.");
+				//ftpClient.setFileType(FTPClient.BINARY_FILE_TYPE);
+				 boolean login = ftpClient.login(ftpUser,ftpPassword);
+				 System.out.println("\n\n111");
+				  if (login)
+		 		  {//1
+						System.out.println("Connection established... with"+branchCode);
+					   //list All Directories
+						FTPFile[] mainfilelist=ftpClient.listFiles();
+						int fileCount=mainfilelist.length;
+						System.out.println("Server file Count:.."+fileCount);
+						//System.out.println("Server file Count:.."+fileCount);
+						if(fileCount!=0)
+						{//2
+							String fileString="";
+							for(FTPFile f1:mainfilelist)
+							{//3								
+								String folderName=f1.getName();								
+								System.out.println("\n\n\nfolderName:"+folderName);																
+									if(folderName.endsWith(".txt"))
+									{//3.1.1
+											
+										if(folderName.contains("From_CBS_Return_Outward.txt"))
+										{//44		
+												InputStream is=ftpClient.retrieveFileStream(folderName);	
+												BufferedReader br=new BufferedReader(new InputStreamReader(is));																					
+												String line=null;
+												while((line=br.readLine())!=null)
+												{//1
+													branchCode=Configuration.lPad(branchCode,2,"0");
+													fos.println(line);	
+												}//1
+												br.close();
+												fos.close();
+												is.close();//DSP
+												//cbsTxtFileflg=true;											
+												//convert images to byte array..
+												if(!ftpClient.completePendingCommand())
+												{ 
+													ftpClient.logout(); 
+													ftpClient.disconnect(); 
+													System.err.println("File transfer failed."); 
+												} 
+												cbsTxtFileflg=true;	
+												cnt++;
+												ftpClient.deleteFile(folderName);								
+										}//44
+										else
+										{//44
+											 msg="Text File Name Should Be 'From_Cbs_Return_Outward.txt'!";
+										}//44			
+									}//3.1.1
+									else
+									{//3.1.1
+										 msg="No Return Outward File Present at Branch";
+									}//3.1.1	
+							 }//3	
+						 }//2
+						 else
+						 {//2
+						 	msg="File Not Found at Branch.";
+						 }//2
+				   }//1 		 
+				   else
+					{//1
+						 //msg="FAIL_TO_CONNECT_TO_BRANCH";	
+						  msg="Failed To Connect To Branch!";	
+					}//1	 	 		  
+					//imageFlg=false,micrFlg=false,cbsTxtFileflg=false;;
+					
+					System.out.println("cbsTxtFileflg"+cbsTxtFileflg);
+					//System.out.println("cbsTxtFileflg"+cbsTxtFileflg);	
+
+					if(cbsTxtFileflg || cnt>0)
+					{//1
+							msg="SUCCESS";
+					}//1
+			}//try
+			catch(FileNotFoundException e)
+			{
+				System.out.println("******** FileNotFoundException in getReturnOutward()"+e);
+				 //msg=e.getMessage()+" This Folder is not Available at Upload path";
+				if(cnt==0) 
+					msg="FailCBS11";				
+			}
+			catch(java.net.ConnectException e)
+			{
+				disconnectedBranchesStatus.append(branchCode+" ");
+			}
+			catch(Exception e)
+			{
+				System.out.println("** Exception in getReturnOutwardFile.jsp"+e);
+				if(cnt==0) 
+					msg="FailCBS22";	
+			}
+			finally
+			{
+				try
+				{
+					ftpClient.logout(); 
+					ftpClient.disconnect(); 
+				}
+				catch(Exception e)
+				{
+					System.out.println("** Exception in getReturnOutwardFile.jsp getBranchFile()"+e);
+				}
+			}		
+				System.out.println("msg:>>>>"+msg);	
+			return msg;
+	}//getBranchFiles
+	
+	public String getBranchFilesLocal(String localPath,Connection con)
+	{//getBranchFiles
+	
+		PrintWriter fos=null;
+		int cnt=0;
+		boolean cbsTxtFileflg=false;
+		StringBuffer disconnectedBranchesStatus=new StringBuffer();
+			String msg="";
+			int cbsFileCnt=0;
+			System.out.println("\n\nIn getBranchFiles");
+			int imageFileCount=0;
+			System.out.println("\n\n111");
+			FileInputStream inputStream = null;
+			
+			try
+			{
+				 File path=new File(localPath);
+				  //if (login)
+		 		  {//1
+					   //list All Directories
+						File[] mainfilelist=path.listFiles();
+						int fileCount=mainfilelist.length;
+						System.out.println("Server file Count:.."+fileCount);
+						//System.out.println("Server file Count:.."+fileCount);
+						if(fileCount!=0)
+						{//2
+							String fileString="";
+							for(File f1:mainfilelist)
+							{//3								
+								String folderName=f1.getName();								
+								System.out.println("\n\n\nfolderName:"+folderName);																
+									if(folderName.endsWith(".txt"))
+									{//3.1.1
+											
+										if(folderName.contains("From_CBS_Return_Outward.txt"))
+										{//44		
+												//FileInputStream is=;	
+												BufferedReader br=new BufferedReader(new InputStreamReader(new FileInputStream(localPath+"/"+folderName)));																					
+												String line=null;
+												fos=new PrintWriter(new File(Configuration.getConfValByNm("CFG_uploadpath_to_CHI",con)+ "/ReturnOutward/From_CBS_Return_Outward.txt"));
+												while((line=br.readLine())!=null)
+												{//1
+													fos.println(line);
+													
+												}//1
+												//br=null;
+												br.close();
+												fos.close();
+												
+												cbsTxtFileflg=true;	
+												cnt++;
+												System.out.println(f1.delete());								
+										}//44
+										else
+										{//44
+											 msg="Text File Name Should Be 'From_Cbs_Return_Outward.txt'!";
+										}//44			
+									}//3.1.1
+									else
+									{//3.1.1
+										 msg="No Return Outward File Present at Branch";
+									}//3.1.1	
+							 }//3	
+						 }//2
+						 else
+						 {//2
+						 	msg="File Not Found at Branch.";
+						 }//2
+				   }//1
+					//System.out.println("cbsTxtFileflg"+cbsTxtFileflg);
+					//System.out.println("cbsTxtFileflg"+cbsTxtFileflg);	
+
+					if(cbsTxtFileflg || cnt>0)
+					{//1
+							msg="SUCCESS";
+					}//1
+			}//try
+			catch(FileNotFoundException e)
+			{
+				System.out.println("******** FileNotFoundException in getReturnOutward()"+e);
+				 //msg=e.getMessage()+" This Folder is not Available at Upload path";
+				if(cnt==0) 
+					msg="FailCBS11";				
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+				System.out.println("** Exception in getReturnOutwardFile.jsp"+e);
+				if(cnt==0) 
+					msg="FailCBS22";	
+			}	
+			System.out.println("msg:>>>>"+msg);	
+			return msg;
+	}//getBranchFiles
+%>
+
+<%
+		int fileCount;
+		
+		String retVal="";
+		String XMLFileName;
+		String CIBFFileName;
+		String[] imageFileArray;
+		
+		String userAuthority="ACM";
+		String branchFolder="";		//"B2";
+		String userRole="";	
+		StringBuffer status=new StringBuffer();
+		
+		//FileOutputStream fos;		
+		PrintWriter fos=null;
+		int cnt=0;
+		boolean cbsTxtFileflg=false;;
+		Connection con=null;
+		PreparedStatement ps=null;
+		ResultSet rs=null;
+		String ftpUrl="";
+		int ftpPort=0;
+		String ftpUser="";
+		String ftpPassword="";
+		String BRNCD="";
+		String BRM_IFSCCODE="";
+		System.out.println("******** getReturnOutwardFile.jsp start ************");
+		userRole=(String)session.getAttribute("session_user_role");	
+   		System.out.println("session_user_role====>"+userRole);		
+   		String localPath = (String) session.getAttribute("session_local_file_path");
+		//here  userRole 'C' is indicates the user is Maker, so we need to download the images from branch
+		if(userAuthority.indexOf(userRole)>-1)
+		{//1						
+				try
+				{//try				
+					//String filePath=Configuration.getConfValByNm("CFG_uploadpath_to_CHI");	
+					//filePath=filePath+"ReturnOutward/";
+					//fos= new FileOutputStream(filePath);		
+					//fos=new PrintWriter(filePath);
+					String sql="select BRM_DOWNLOADFTPURL,BRM_DOWNLOADFTPPORT,BRM_DOWNLOADFTPUSER, BRM_DOWNLOADFTPPASS,BRM_BRNCD,BRM_IFSCCODE from BRANCHMSTR";
+					sql=sql+" where BRM_CTSMAINBRN='Y'";
+					System.out.println("sql=sql--- "+sql);
+					con=Configuration.getConnection();
+					ps=con.prepareStatement(sql);
+					rs=ps.executeQuery();
+					while(rs.next())
+					{//1
+							ftpUrl=rs.getString(1);
+							ftpPort=Integer.parseInt(rs.getString(2));
+							ftpUser=rs.getString(3);
+							ftpPassword=rs.getString(4);
+							BRNCD=rs.getString(5);
+							BRM_IFSCCODE=rs.getString(6);
+							System.out.println("ftpUrl===>"+ftpUrl);
+							System.out.println("ftpPort===>"+ftpPort);
+							System.out.println("ftpUser===>"+ftpUser);
+							System.out.println("ftpPassword===>"+ftpPassword);
+							System.out.println("BranchCD===>"+BRNCD);														
+							System.out.println("BRM_IFSCCODE===>"+BRM_IFSCCODE);	
+							
+							
+							System.out.println("\n\nStatus::>>>"+status);
+					}//1
+					//close fos
+					String result="";
+					if (Configuration.getConfValByNm("CFG_FILE_COPY_STYLE",con).equals("FTP"))
+					{
+						result=getBranchFiles(ftpUrl,ftpPort,ftpUser,ftpPassword,BRNCD,BRM_IFSCCODE);
+						System.out.println("111");
+					}
+					else{
+						System.out.println("222");
+						result=getBranchFilesLocal(localPath,con);
+					}
+					
+					status.append(result);
+					//fos.close();			
+				}//try
+				catch(SQLException e)
+				{
+					System.out.println("\n\n*** SQLException in getReturnOutward.jsp ***\n\n"+e);	
+					retVal="Problem To Fetch Records";		
+					e.printStackTrace();
+				}
+				catch(Exception e)
+				{
+					System.out.println("\n\n*** Exception in getReturnOutward.jsp ***\n\n"+e);	
+					retVal="Problem in Retrun Outward.";		
+					e.printStackTrace();			
+				}
+				finally
+				{
+					try
+					{
+						if(rs!=null)
+							rs.close();
+						if(ps!=null)
+							ps.close();							
+						if(con!=null)
+							con.close();
+					}
+					catch(Exception e)
+					{}
+				}
+				System.out.println("**********status::");
+				System.out.println("status::"+status);	
+				System.out.println("cnt::"+cnt);
+							
+				//if(status.indexOf("SUCCESS")>-1 && cnt>0)	
+				if(true)	
+				{//2
+							Engine.readAndInsertRetunOutwardTextFile();
+							 //retVal="Ready To convert.";
+							  retVal=Engine.err_status;
+							 System.out.println("\n\t retval:"+retVal);
+							 con=Configuration.getConnection();
+							 //Added By Omkar To show Return Outward Records On Jsp Start
+							 //String sql="Select * from RETRUNOUTWARD where RTO_DDMMYYYY=? and RTO_STATUS='Y'";
+							String sql=""; 
+							 float ver=Float.parseFloat(Configuration.getConfValByNm("CFG_OURVERSIONNO", con));
+      						if(ver>1)
+      						{
+      							
+      							sql="Select RTO_CHEQUENO,RTO_PAYORBANKROUTNO,RTO_TRANSACTIONCODE,RTO_AMOUNT, nvl(( select RTO_RETURNREASONCODE||'--'||SUBSTR(RETDESCR, 1,decode((INSTR(RETDESCR, '(' )-1),'-1',length(RETDESCR) , (INSTR(RETDESCR, '(' )-1)))  from RETINWRETCODES where to_number(RETCODE)= to_number(RTO_RETURNREASONCODE)),RTO_RETURNREASONCODE) as RTO_RETURNREASONCODE,nvl(RTO_RETREASONCOMMT,' ') RTO_RETREASONCOMMT,";
+      							sql+="nvl((select WAR_CODE from warning where instr(nvl(r.RTO_WRN_CODE,'NA'),WAR_CODE)>0),0) as WRN_CODE , (select count(*) from CLEARINGINWARD where "
+      									+" CLI_PAYORBANKROUTNO=r.RTO_PAYORBANKROUTNO and  CLI_SERIALNO=r.RTO_CHEQUENO "
+      									+" and to_number(CLI_TRANSCODE)=to_number(r.RTO_TRANSACTIONCODE) and CLI_DDMMYYYY=r.RTO_DDMMYYYY "
+      									+" and to_number(CLI_AMOUNT)=to_number(r.RTO_AMOUNT) and ltrim(rtrim(CLI_CLRSRNO))=ltrim(rtrim(RTO_ITEMSEQUENCENO))) flag, RTO_ITEMSEQUENCENO ";//CLI_ITEMSEQUENCENO
+      							sql+=" from RETRUNOUTWARD r where RTO_DDMMYYYY=? and RTO_STATUS='Y' order by 8";
+      							
+      						}
+      						else{
+      							sql="Select RTO_CHEQUENO,RTO_PAYORBANKROUTNO,RTO_TRANSACTIONCODE,RTO_AMOUNT, nvl(( select RTO_RETURNREASONCODE||'--'||SUBSTR(RETDESCR, 1,decode((INSTR(RETDESCR, '(' )-1),'-1',length(RETDESCR) , (INSTR(RETDESCR, '(' )-1)))  from RETINWRETCODES where to_number(RETCODE)= to_number(RTO_RETURNREASONCODE)),RTO_RETURNREASONCODE) as RTO_RETURNREASONCODE,nvl(RTO_RETREASONCOMMT,' ') RTO_RETREASONCOMMT,";
+      							sql+="nvl((select WAR_CODE from warning where instr(nvl(r.RTO_WRN_CODE,'NA'),WAR_CODE)>0),0) as WRN_CODE , (select count(*) from CLEARINGINWARD where "
+      									+" CLI_PAYORBANKROUTNO=r.RTO_PAYORBANKROUTNO and  CLI_SERIALNO=r.RTO_CHEQUENO "
+      									+" and to_number(CLI_TRANSCODE)=to_number(r.RTO_TRANSACTIONCODE) and CLI_DDMMYYYY=r.RTO_DDMMYYYY "
+      									+" and to_number(CLI_AMOUNT)=to_number(r.RTO_AMOUNT)) flag, RTO_ITEMSEQUENCENO ";
+      							sql+=" from RETRUNOUTWARD r where RTO_DDMMYYYY=? and RTO_STATUS='Y' order by 8";
+      						}
+				
+				System.out.println("Sudarshannn- "+sql);
+							 StringBuffer strBuf=new StringBuffer();
+							 try
+							 {//try
+								 
+								 ps=con.prepareStatement(sql);
+								 ps.setString(1,Configuration.getDDMMYYYY());
+								 rs=ps.executeQuery();
+								 							
+								 //RTO_BOFD, RTO_CHEQUENO, RTO_SORTCODE, RTO_TRANSACTIONCODE, RTO_AMOUNT, RTO_ACCOUNTNUMBER, RTO_RETURNREASONCODE, RTO_STATUS, RTO_PAYORBANKROUTNO, RTO_UNIQUENO, RTO_DDMMYYYY, RTO_XMLFILENAME, RTO_ITEMSEQUENCENO
+								 int rec_count=0;
+								 while(rs.next())
+								 {
+									String tempstr=rs.getString(1)+"!Q!"+rs.getString(2)+"!Q!"+rs.getString(3)+"!Q!"+rs.getString(4)+"!Q!"+rs.getString(5)+"!Q!"+rs.getString(6)+"!Q!"+rs.getString(7)+"!Q!"+rs.getString(8)+"!Q!"+rs.getString(9)+"!@!";
+									//System.out.println("msg==="+tempstr);
+									strBuf.append(tempstr);
+									rec_count++;
+								 }
+								 if(rec_count==0 && retVal.indexOf("SUCCESS")>-1)
+								 {
+								 	retVal="No record present in From_Cbs_Return_Outward.txt";
+								 }
+								 else if(rec_count>0)
+								 {
+								 
+									 retVal=strBuf.toString();
+								 }
+								 else
+								 {
+								 	 retVal=Engine.err_status;
+								 }
+							  }//try
+							  catch(Exception e)
+							  {
+								  
+							  	System.out.println("\n\t Exception in getReturnOutward.jsp :"+e);
+							  }	
+							  finally
+								{
+									try
+									{
+										if(rs!=null)
+											rs.close();
+										if(ps!=null)
+											ps.close();							
+										if(con!=null)
+											con.close();
+									}
+									catch(Exception e)
+									{}
+								} 
+				}//2				
+		}//1
+		//System.out.println("******* Exit From getReturnOutward.jsp *************** msg"+retVal);
+		out.print("#"+retVal);
+%>

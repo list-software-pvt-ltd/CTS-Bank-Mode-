@@ -1,0 +1,392 @@
+// JavaScript Document
+var imagePath="";
+var chkCount=0;
+var amountSum=0;
+var countSum=0;
+function onload_load_inwData()
+{
+	
+	var session_loginid = document.getElementById("session_loginid").value;
+	var url = document.URL;
+	var p = url.lastIndexOf('/');
+	imagePath = url.substr(0,p+1);
+	imagePath = imagePath+"downloadpath_from_CHI/ClearingInward/Images/";
+	
+	if(session_loginid == "null")
+	{
+
+		alert("Your Session Has Been Expired. Please Login Again.");
+		/*var baseurl=document.URL;
+		var p=baseurl.lastIndexOf('/');
+		baseurl=baseurl.substr(0,p+1);
+		baseurl=baseurl+"login.jsp?flag=1";
+		location.replace(baseurl);*/
+		menuOnClick("login.jsp");
+	}
+	else
+	{
+		var d=document.getElementById("menu_return_outward");
+		d.className = ' active';
+		var val=document.getElementById("hdMsg2").value;
+		//alert("val :"+val);
+		
+		if(val!="N")
+		{
+			if(val.indexOf("SUCCESS"))
+			{
+				
+				alert(val);
+				var retval1=confirm('Do you want Create File of this Return Outward cheques?');
+				if (retval1==true)
+				{
+					var baseurl=document.URL;
+					var p=baseurl.lastIndexOf('/');
+					baseurl=baseurl.substr(0,p+1);
+					baseurl=baseurl+"return_outward.jsp";
+					//location.replace(baseurl);
+					document.getElementById("formid").action="return_outward.jsp";
+					document.getElementById("formid").method="POST";
+					document.getElementById("formid").submit();
+					//location.replace(imagePath+"return_outward.jsp");
+				}
+				
+			}
+			else
+			{	alert(val);
+				var url=document.URL.substring(0,document.URL.indexOf("?"));
+				//alert(url);
+				//location.replace(url);
+				document.getElementById("formid").action="returnOutward_manually.jsp";
+				document.getElementById("formid").method="POST";
+				document.getElementById("formid").submit();
+			}
+		}
+		else
+		{
+			//alert("list_ret_inward_filenames"); //\CTS\downloadpath_from_CHI\ReturnInward
+			//document.getElementById("waiting").style.display='';
+			var url=document.URL;
+			var p=url.lastIndexOf('/');
+			baseurl=url.substr(0,p+1);
+			baseurl=baseurl+"jsp/getClearingInwardData.jsp";
+			//location.replace(baseurl);
+			cts_Ajax_cle_inward_data(baseurl);
+		}
+	}
+}
+function cts_Ajax_cle_inward_data(url)
+{
+	//alert ("Retriving Data");
+	if (window.XMLHttpRequest)
+	{
+		req = new XMLHttpRequest();
+		req.onreadystatechange = cts_process_cle_inward_data;
+		req.open("GET", url, true);
+		req.send(null);
+	}
+	// branch for IE/Windows ActiveX version
+	else if (window.ActiveXObject)
+	{
+		req = new ActiveXObject("Microsoft.XMLHTTP");
+		if (req)
+		{
+			req.onreadystatechange =  cts_process_cle_inward_data;
+			req.open("GET", url, true);
+			req.send(null);
+		}
+	}
+}
+
+function cts_process_cle_inward_data()
+{
+
+  	if(req.readyState == 4)
+	{
+		if(req.status == 200)
+		{
+			var res = req.responseText;
+			//alert(res.indexOf("NODATA"));
+			if(res.indexOf("NODATA")!=-1)
+			{
+				alert(" Clearing Inward Data Not Available!");
+				var baseurl=document.URL;
+				var p=baseurl.lastIndexOf('/');
+				baseurl=baseurl.substr(0,p+1);
+				baseurl=baseurl+"main.jsp";
+				//location.replace(baseurl);
+				document.getElementById("formid").action="main.jsp";
+				document.getElementById("formid").method="POST";
+				document.getElementById("formid").submit();
+				//location.replace(imagePath+"main.jsp");
+			}
+			else
+			{	
+				loadCleInwGrid(res);
+				
+			}
+		}
+		else
+		{
+			alert("Problem In Retrieving Data.Please Check The Server Connection.");
+			document.getElementById("waiting").style.display='none';
+		}
+	}
+}
+
+var myGrid;
+function loadCleInwGrid(response) 
+{
+	var data =JSON.parse(response);
+	myGrid = new dhtmlXGridObject('filejsongrid');		
+	myGrid.setImagePath("codebase/imgs/");	
+	myGrid.setHeader("Select All<input type='checkbox' id='mastercheck' value='mastercheck' onClick='onMastercheck(this)'>,Sr.No,BOFD Route Number,Cheque Number,Sort Code,Tran Code,Amount (In Rs.),Return Reason Code<select id='myselect' name='myselect' style='width: 90%' onchange='onMyselectChange(this)'/>,Return Reason Comment,Account Number,Clearing Type,Image name,ItemSequence Number,Amount",null,
+			["text-align:center;","text-align:center;","text-align:left;","text-align:center;","text-align:center;","text-align:left;","text-align:right;","text-align:center;","text-align:center;","text-align:left;","text-align:center;","text-align:left;","text-align:left;","text-align:left;"]);
+	myGrid.attachHeader(",,,#text_search,#select_filter");
+	myGrid.setColumnIds("onSelect,rownum,CLI_BOFDROUTNO,CLI_SERIALNO,CLI_PAYORBANKROUTNO,CLI_TRANSCODE,CLI_AMOUNT,RTO_RETURNREASONCODE,RTO_RETREASONCOMMT,CLI_ACCOUNTNO,CLI_CLEARINGTYPE,CLI_IMAGEFILE3,CLI_CLRSRNO,CLI_AMOUNT");
+	myGrid.setInitWidths("50,40,0,80,100,50,150,200,200,150,60,0,0,0");	
+	myGrid.setColAlign("center,center,left,center,center,center,right,center,center,center,center,left,left,left");
+	myGrid.setColTypes("ch,ro,ro,ro,ro,ro,ro,coro,ed,ro,ro,ro,ro,ro");
+	myGrid.setColSorting("str,str,str,str,str,str,str,str,str,str,str,str,str,str");
+	myGrid.attachEvent("onCheck", doOnCellCheck);
+	myGrid.init();	
+	var coro = myGrid.getCombo(7);
+	coro.put("-1","-select-");
+	var nn=0;
+	add_item("myselect", "00", '--Select Reason Code--');
+	for(i=0;i<data.RETCODES.length;i++)
+	{	
+		coro.put(data.RETCODES[i].retcode,data.RETCODES[i].retdesc)
+		add_item("myselect", data.RETCODES[i].retcode, data.RETCODES[i].retdesc);
+	}
+	
+	myGrid.parse(data.ENTRIES,"js");	
+	myGrid.attachEvent("onRowSelect", onRowSelect1);
+	myGrid.forEachRow(function(id)
+	{
+		myGrid.setRowTextStyle(id,"border-color:#a4bed4;");
+		//alert(myGrid.cellById(id,9).getValue());
+		
+		if (myGrid.cellById(id,6).getValue().length >0)
+		 {
+			var am=Number(myGrid.cellById(id,6).getValue());
+			 myGrid.cellById(id,6).setValue(((am*1)/100).toFixed(2))
+		 }
+		
+		 if (myGrid.cellById(id,7).getValue().length >0)
+		 {
+			 var am=Number(myGrid.cellById(id,6).getValue());
+			 chkCount++;
+			 amountSum=amountSum+am;
+			 myGrid.cellById(id,0).setValue(1)
+		 }
+		 
+	 });
+	document.getElementById("totCheck").value=chkCount;
+	document.getElementById("totamount").value=amountSum.toFixed(2);
+
+	
+ }
+function onRowSelect1(id,ind)
+{
+	
+	if(ind!=7)
+	{
+		if(ind!=8)
+		{
+			var singleChqNo=this.cellById(id,11).getValue();
+			//var brncd=this.cellById(id,14).getValue();
+			//imagePath= imagePath+"/Images/";
+			//alert(imagePath+singleChqNo);
+			document.getElementById('img_frnt').src =imagePath+singleChqNo+".jpg";
+			//enlargeCheque_outwardchqs('img_frnt');
+		}
+	}
+}
+
+function save_retOwd_data()
+{
+	var count=0;
+	var dataArr = [];
+	var codeflg=true;
+	var reasonflg=true;
+	myGrid.forEachRow(function(id)
+	{	
+		if(myGrid.cells(id,0).getValue()==1)
+		{
+			if(myGrid.cells(id,7).getValue().length>0 && myGrid.cells(id,7).getValue()!='-1')
+			{
+				//alert(myGrid.cells(id,7).getValue()+"=="+myGrid.cells(id,8).getValue().length);
+			
+				if(myGrid.cells(id,7).getValue()=='88' && myGrid.cells(id,8).getValue().length==0)
+				{
+					if(codeflg)
+						alert("Please Enter Return Reason Comment");
+					codeflg=false;
+					
+					
+					myGrid.selectCell(id-1,10,false,true,true);
+					return;
+					
+																		
+				}
+				else if(myGrid.cells(id,7).getValue()=='88' && myGrid.cells(id,8).getValue().length>25)
+				{
+					if(codeflg)
+							alert("Enter Return Reason Comment less than 25 character");
+						codeflg=false;
+					
+				}
+				else if(/^[A-Za-z ]+$/.test(myGrid.cells(id,8).getValue()) == false && myGrid.cells(id,7).getValue()=='88') {
+					alert("Remove special/numeric characters from return reason comment.");
+					codeflg=false;
+				}
+						
+				else
+				{
+						dataArr.push({	
+								
+								BOFDROUTNO:myGrid.cells(id,2).getValue(),
+								CHQNO: myGrid.cells(id,3).getValue(),
+								SORTCODE:myGrid.cells(id,4).getValue(),
+								TRANCODE:myGrid.cells(id,5).getValue(),
+								AMOUNT:myGrid.cells(id,13).getValue(),
+								ACCNO:myGrid.cells(id,9).getValue(),
+								CLETYPE:myGrid.cells(id,10).getValue(),
+								RETREASONCODE:myGrid.cells(id,7).getValue(),
+								RETREASONCMMNT:myGrid.cells(id,8).getValue(),
+								ITEMSEQNO:myGrid.cells(id,12).getValue()
+																
+							});
+							count++;
+						
+				}
+		
+			}
+			else
+			{
+				if(codeflg)
+					alert("Please select Return Reason Code");
+				codeflg=false;
+				myGrid.selectCell(id-1,9,false,true,true);
+				return ;
+			}
+							
+		}
+	
+	});
+	if(reasonflg==true && codeflg==true)
+	{
+		if(count==0)
+		{
+			alert("Select Atleast One Record With Correct Status!");
+		}
+		else
+		{
+			
+				var retval1=confirm('Do you want SAVE this Return cheque Data?');
+				if (retval1==true)
+				{
+			
+					document.getElementById("jsonString").value=JSON.stringify(dataArr);
+					document.getElementById("formid").action="jsp/saveReturnOutwardData.jsp";
+					document.getElementById("waiting").style.display='none';
+					document.getElementById("formid").submit();
+				}
+			}
+	}	
+}
+function doOnCellCheck(rId,cInd,state)
+{
+	var amt=Number(myGrid.cells(rId,6).getValue());
+	amountSum=Number(document.getElementById("totamount").value);
+	countSum=Number(document.getElementById("totCheck").value);
+	if(myGrid.cells(rId,0).getValue()==1)
+	{	
+		amountSum=amountSum+amt;
+		countSum=countSum+1;		
+		document.getElementById("totCheck").value=countSum;
+		document.getElementById("totamount").value=amountSum.toFixed(2);
+		var totrows=myGrid.getRowsNum();
+		if(countSum==Number(totrows)){
+			mastercheck.checked=true;
+		}
+	}
+	else if(myGrid.cells(rId,0).getValue()==0)
+	{	
+		document.getElementById("myselect").value="00";
+		myGrid.cellById(rId,7).setValue('');
+		mastercheck.checked=false;
+		amountSum=amountSum-amt;
+		countSum=countSum-1;
+		document.getElementById("totCheck").value=countSum;
+		document.getElementById("totamount").value=amountSum.toFixed(2);
+	}
+}
+
+
+function onMastercheck(id)
+{
+	var chk=id.checked;	
+	if(chk == true)
+	{
+		myGrid.checkAll(true);
+		countSum=0;
+		amountSum=0;
+		
+		myGrid.forEachRow(function(id)
+				{
+					
+					 if (myGrid.cellById(id,6).getValue().length >0)
+					 {
+						 countSum++;
+						 var am=Number(myGrid.cellById(id,6).getValue());
+						 amountSum=amountSum+am;
+					 }
+					 
+				 });
+		document.getElementById("totCheck").value=countSum;
+		document.getElementById("totamount").value=amountSum.toFixed(2);
+		
+		
+	}
+	else if(chk == false)
+	{
+		myGrid.forEachRow(function(id)
+				{
+					myGrid.cellById(id,7).setValue('');
+				});
+		document.getElementById("myselect").value="00";
+		myGrid.checkAll(false);
+		countSum=0;
+		amountSum= 0;
+		document.getElementById("totCheck").value=countSum;
+		document.getElementById("totamount").value=amountSum.toFixed(2);
+	
+	
+	}
+}
+function onMyselectChange(id)
+{
+	var mysel=document.getElementById("myselect").value;
+	
+	var mychk=document.getElementById("mastercheck").checked;
+	if(mychk == false){
+		document.getElementById("myselect").value="00";
+		alert("Please Select All Cheques.");
+	}
+	else if(mysel=="00"){
+		mastercheck.checked=false;
+		myGrid.checkAll(false);
+		myGrid.forEachRow(function(id)
+				{
+					myGrid.cellById(id,7).setValue('');
+				});
+	}
+	else{
+	myGrid.forEachRow(function(id)
+			{
+				myGrid.cellById(id,7).setValue(mysel);
+			});
+	}
+}
+

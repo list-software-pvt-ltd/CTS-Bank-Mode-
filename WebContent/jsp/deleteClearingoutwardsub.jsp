@@ -1,0 +1,369 @@
+ 
+	<%@ page contentType="text/html; charset=iso-8859-1" language="java"
+	import="java.sql.*" import="org.apache.commons.io.FileUtils" errorPage="" %>
+	<%@page import="java.util.*"%>
+	<%@page import="java.io.*"%>
+	<%@page import="cts.*"%>
+	<%@page import="org.json.JSONArray" %>
+	<%@page import="org.json.JSONException" %>
+	<%@page import="org.json.JSONObject" %>
+ 
+	<%
+		String branchFolder = "";//(String) session.getAttribute("session_branch_code");
+		String path="";
+		//System.out.println("############# fetch all      DELETE CLEARING OUTWARD.jsp");
+		branchFolder = (String) session.getAttribute("session_branch_code");
+		int cntfrrtvl=0;
+		String fileNameList = "";
+		String brncd="";
+		String retStr="",ctstoken=null,flag="";
+		int brnFoundCount = 0;
+		PreparedStatement pst = null;
+		int  saveFlag=0;
+		
+		
+		String res=null,frdate=null,cltype=null,whattodo=null,xmlfile=" ";
+		String msg="",amount="",sortCode="",tranCode="",cheqNo="",bofd="",branch="";	
+		int i=0,j=0;
+		StringBuffer thisBuffer=new StringBuffer();
+		
+		String query="";
+		JSONArray listTrans = new JSONArray();
+		JSONObject dataset = new JSONObject();
+		
+		try
+		{
+			Connection cn = Configuration.getConnection();//(Connection)session.getAttribute("session_connection");
+			//System.out.println("cn============================="+cn);
+			path=Configuration.getConfValByNm("CFG_uploadpath_to_CHI",cn)+ branchFolder+ "/ClearingOutward/";
+			if(cn == null)
+			throw new Exception("Session is Null");
+			//cltype=request.getParameter("clearingtype");
+			ctstoken=request.getParameter("CTSTOKEN");
+			flag=request.getParameter("flag");
+			frdate=request.getParameter("datepicker");
+			frdate=frdate.replace("-", "");
+			whattodo=request.getParameter("whattodo");//whattodo
+			bofd=request.getParameter("bofd");
+			//System.out.println("############# whattodo"+whattodo);
+			brncd=request.getParameter("opt_branch_code");
+			branch=request.getParameter("brncd");
+			try
+			{
+				String query_cltype="select distinct CLO_CLEARINGTYPE from CLEARINGOUTWARD where "
+						+"CLO_DATE_DDMMYYYY=? ";
+				System.out.println("query_cltype=="+query_cltype);
+				PreparedStatement ps1=cn.prepareStatement(query_cltype);
+				ps1.setString(1, frdate);				
+				ResultSet rs1=ps1.executeQuery();	
+				if(rs1.next())
+				{
+					cltype=rs1.getString(1);				
+					System.out.println("cltype=="+cltype);
+				}
+				rs1.close();
+				ps1.close();
+			}
+			catch(Exception e){
+				e.printStackTrace();
+			}	
+			try
+			{
+				xmlfile=request.getParameter("xmlfilename");
+			}
+			catch(Exception e1)
+			{
+				xmlfile="NA";
+				e1.printStackTrace();
+			}
+			if(whattodo.equalsIgnoreCase("FF"))
+			{
+				query="select distinct nvl(CLO_XMLFILENAME,'NOT MERGED YET') from CLEARINGOUTWARD where "
+						+"CLO_DATE_DDMMYYYY=? and  CLO_CLEARINGTYPE=? and "
+						+"CLO_BRANCH_CD=decode(?,'All',CLO_BRANCH_CD,?) and CLO_BOFD in (select "
+						+"BRM_MICRCD from BRANCHMSTR where BRM_BRNCD = decode(?,'All',BRM_BRNCD,?))";
+				System.out.println("query=="+query);
+				PreparedStatement ps=cn.prepareStatement(query);
+				ps.setString(1, frdate);
+				ps.setString(2, cltype);
+				ps.setString(3, brncd);
+				ps.setString(4, brncd);
+				ps.setString(5, bofd);
+				ps.setString(6, bofd);
+				ResultSet rs=ps.executeQuery();
+				
+				i=1;
+				while(rs.next())
+				{
+					thisBuffer.append(rs.getString(1)+"~");
+					cntfrrtvl++;
+				}
+				if(cntfrrtvl>0)
+				{
+					dataset.put("RESPCODE", "0");
+					dataset.put("RETVAL", thisBuffer.toString());
+				}
+				else
+				{
+					dataset.put("RESPCODE", "1");
+					dataset.put("RETVAL", "FAIL");
+				}
+				//System.out.println(dataset.toString());				
+				out.println(dataset.toString());
+			}
+			else if(whattodo.equalsIgnoreCase("S"))
+			{
+				if(xmlfile.equalsIgnoreCase("NOT MERGED YET"))
+					query="select * from CLEARINGOUTWARD where CLO_DATE_DDMMYYYY='"+frdate+"' and  CLO_CONVERT_FLG='Y' and  CLO_CLEARINGTYPE='"+cltype+"' and CLO_BRANCH_CD=decode('"+brncd+"','All',CLO_BRANCH_CD,'"+brncd+"')  and CLO_BOFD in (select "
+							+"BRM_MICRCD from BRANCHMSTR where BRM_BRNCD=decode('"+bofd+"','All',BRM_BRNCD,'"+bofd+"'))";
+				else if(xmlfile.equalsIgnoreCase("02"))
+					query="select * from CLEARINGOUTWARD where CLO_DATE_DDMMYYYY='"+frdate+"' and  CLO_CONVERT_FLG ='N' and  CLO_CLEARINGTYPE='"+cltype+"' and CLO_BRANCH_CD=decode('"+brncd+"','All',CLO_BRANCH_CD,'"+brncd+"')  and CLO_BOFD in (select "
+							+"BRM_MICRCD from BRANCHMSTR where BRM_BRNCD=decode('"+bofd+"','All',BRM_BRNCD,'"+bofd+"'))";
+				else if(xmlfile.equalsIgnoreCase("03"))
+					query="select * from CLEARINGOUTWARD where CLO_DATE_DDMMYYYY='"+frdate+"' and  CLO_CONVERT_FLG ='N' and  CLO_CLEARINGTYPE='"+cltype+"' and CLO_BRANCH_CD=decode('"+brncd+"','All',CLO_BRANCH_CD,'"+brncd+"')  and CLO_BOFD in (select "
+							+"BRM_MICRCD from BRANCHMSTR where BRM_BRNCD=decode('"+bofd+"','All',BRM_BRNCD,'"+bofd+"')) and substr(CLO_SORTCD,4,3) in (select MICRBANKCODE from BLOCKEDMICRCODE) ";
+				else
+					query="select * from CLEARINGOUTWARD where CLO_DATE_DDMMYYYY='"+frdate+"' and  CLO_CLEARINGTYPE='"+cltype+"' and CLO_BRANCH_CD=decode('"+brncd+"','All',CLO_BRANCH_CD,'"+brncd+"') and CLO_XMLFILENAME='"+xmlfile+"'  and CLO_BOFD in (select "
+							+"BRM_MICRCD from BRANCHMSTR where BRM_BRNCD=decode('"+bofd+"','All',BRM_BRNCD,'"+bofd+"'))";
+				System.out.println(query);
+				PreparedStatement ps=cn.prepareStatement(query);
+				
+				ResultSet rs=ps.executeQuery();
+						
+				i=1;
+				while(rs.next())
+				{
+					JSONObject obj = new JSONObject();
+					obj.put("CLO_BOFD", rs.getString("CLO_BOFD"));
+					obj.put("CLO_CHQNO", rs.getString("CLO_CHQNO")); 
+					obj.put("CLO_SORTCD", rs.getString("CLO_SORTCD"));
+					obj.put("CLO_TRANCD", rs.getString("CLO_TRANCD"));
+					obj.put("CLO_AMOUNT", rs.getString("CLO_AMOUNT"));
+					obj.put("CLO_PAYEE_ACCNO", rs.getString("CLO_PAYEE_ACCNO"));
+					obj.put("CLO_PAYEE_ACCNM", rs.getString("CLO_PAYEE_ACCNM"));
+					obj.put("CLO_CLEARINGTYPE",rs.getString("CLO_CLEARINGTYPE"));
+					obj.put("CLO_ITEMSEQNO",rs.getString("CLO_ITEMSEQNO"));
+					obj.put("CLO_IMG_FRNT_GR",rs.getString("CLO_IMG_FRNT_GR"));
+					
+					listTrans.put(obj);
+					i++;	
+					cntfrrtvl++;
+				}
+				
+				if(cntfrrtvl!=0)
+				{
+				dataset.put("RETVAL", listTrans);
+				dataset.put("RESPCODE", cntfrrtvl);
+				}
+				else
+				{
+				dataset.put("RESPCODE", cntfrrtvl);
+				}
+				//System.out.println(dataset.toString());				
+				out.println(dataset.toString());
+				
+		}
+		else if(whattodo.equalsIgnoreCase("D"))
+		{
+			String vals=request.getParameter("VALS");
+			String chkboxVAL=request.getParameter("CHKBOXVAL");
+			String xmlVal=request.getParameter("xmlfilename");
+			//System.out.println(vals);
+			System.out.println("================checkval"+chkboxVAL);
+			System.out.println("================xmlVal"+xmlVal);
+			brncd=brncd.split("--")[0];
+			  JSONArray array=new JSONArray(vals);
+			  query="delete from CLEARINGOUTWARD where CLO_DATE_DDMMYYYY=? and CLO_CHQNO=? and CLO_SORTCD=? and "
+					  +"CLO_TRANCD=? and CLO_AMOUNT=?  and  CLO_CONVERT_FLG<>'D' and  CLO_CLEARINGTYPE=?  and "
+					  +"CLO_BRANCH_CD=decode(?,'All',CLO_BRANCH_CD,?) and CLO_BOFD in (select BRM_MICRCD from "
+					  +"BRANCHMSTR where BRM_BRNCD= decode(?,'All',BRM_BRNCD,?))";
+			  PreparedStatement ps1=cn.prepareStatement(query);
+			  for(int m=0;m<array.length();m++)
+			  {
+				JSONObject obj=array.getJSONObject(m);
+				amount=obj.getString("Amount");
+				cheqNo=obj.getString("ChequeNo");
+				sortCode=obj.getString("SortCode");
+				tranCode=obj.getString("TranCode");
+				//CLO_CHQNO, CLO_SORTCD, CLO_TRANCD, CLO_AMOUNT
+				System.out.println("date-"+frdate);
+				System.out.println(cheqNo);
+				System.out.println(sortCode);
+				System.out.println(tranCode);
+				System.out.println(amount);
+				System.out.println(cltype);
+				System.out.println(brncd);
+				
+				ps1.setString(1, frdate);
+				ps1.setString(2,cheqNo );
+				ps1.setString(3, sortCode);
+				ps1.setString(4,tranCode );
+				ps1.setString(5, amount);
+				ps1.setString(6,cltype);
+				ps1.setString(7,branch);
+				ps1.setString(8,branch);
+				System.out.println("bofd-"+bofd);	
+				ps1.setString(9,bofd);
+				ps1.setString(10,bofd);
+				System.out.println("query-"+query);	
+				saveFlag=ps1.executeUpdate();
+			  }
+			
+			  if(saveFlag>0)
+				{   
+				  System.out.println("SUCCESS-");	
+				  if(chkboxVAL.equalsIgnoreCase("true"))
+				  {	
+					  if(xmlVal.equalsIgnoreCase("03") )
+					  {
+						  System.out.println("\n sharayu mali xmlVal----"+xmlVal);
+						  retStr="SUCCESS";
+				  	  }
+					  else{
+						  Configuration.moveMicrFiles(path);
+					  }
+				  }
+				  
+					
+				}
+				else
+				{  
+					System.out.println("SUCCESS-");	
+					retStr="FAIL";
+				}
+			  
+			//out.println(dataset.toString());  
+			//response.sendRedirect("../deleteclearingoutwardfrdate.jsp?msg="+retStr);
+		}
+		else if(whattodo.equalsIgnoreCase("U"))
+		{
+			String vals=request.getParameter("VALS");
+			  JSONArray array=new JSONArray(vals);
+				query="update CLEARINGOUTWARD set CLO_CONVERT_FLG='Y',CLO_XMLFILENAME='' where CLO_DATE_DDMMYYYY=? and "
+						+"CLO_CHQNO= ? and CLO_SORTCD=? and CLO_TRANCD=? and to_number(CLO_AMOUNT)=to_number(?) and  "
+						+"CLO_CONVERT_FLG='D' and  CLO_CLEARINGTYPE=?  and CLO_BRANCH_CD=decode(?,'All',CLO_BRANCH_CD,?) "
+						+"and CLO_XMLFILENAME=? and CLO_BOFD in (select BRM_MICRCD from BRANCHMSTR where BRM_BRNCD= "
+						+"decode(?,'All',BRM_BRNCD,?))";
+				PreparedStatement ps1=cn.prepareStatement(query);
+				System.out.println(query);
+			  for(int m=0;m<array.length();m++)
+			  {
+				JSONObject obj=array.getJSONObject(m);
+				amount=obj.getString("Amount");
+				cheqNo=obj.getString("ChequeNo");
+				sortCode=obj.getString("SortCode");
+				tranCode=obj.getString("TranCode");
+				//CLO_CHQNO, CLO_SORTCD, CLO_TRANCD, CLO_AMOUNT
+				ps1.setString(1, frdate);
+				ps1.setString(2,cheqNo );
+				ps1.setString(3, sortCode);
+				ps1.setString(4,tranCode );
+				ps1.setString(5, amount);
+				ps1.setString(6,cltype );
+				ps1.setString(7,branch );
+				ps1.setString(8,branch );
+				ps1.setString(9, xmlfile);
+				ps1.setString(10, bofd);
+				ps1.setString(11, bofd);
+				
+				System.out.println(frdate);
+				System.out.println(cheqNo );
+				System.out.println( sortCode);
+				System.out.println(tranCode );
+				System.out.println( amount);
+				System.out.println(cltype );
+				System.out.println(branch );
+				System.out.println(branch );
+				System.out.println( xmlfile);
+				System.out.println( bofd);
+		
+			 
+			saveFlag=ps1.executeUpdate();
+			  }
+			if(saveFlag>0)
+			{   
+				retStr="SUCCESS";
+			}
+			else
+			{   
+				retStr="FAIL";
+			}
+			//out.println(dataset.toString());  
+			//response.sendRedirect("../deleteclearingoutwardfrdate.jsp?msg="+retStr);
+		}
+		else if(whattodo.equalsIgnoreCase("BOFD"))
+		{
+			cntfrrtvl=0;
+			System.out.println(frdate+"="+cltype+"="+brncd);	
+			query="select BRM_BRNCD, BRM_BRNNM from BRANCHMSTR where BRM_MICRCD in (select distinct CLO_BOFD from "
+					+"CLEARINGOUTWARD where CLO_DATE_DDMMYYYY=? and  CLO_CLEARINGTYPE=? and "
+					+"CLO_BRANCH_CD=decode(?,'All',CLO_BRANCH_CD,?)) order by BRM_BRNCD";
+			PreparedStatement ps=cn.prepareStatement(query);
+			ps.setString(1, frdate);
+			ps.setString(2, cltype);
+			ps.setString(3, brncd);
+			ps.setString(4, brncd);
+			ResultSet rs=ps.executeQuery();
+					
+			i=1;
+			while(rs.next())
+			{
+				JSONObject obj = new JSONObject();
+				obj.put("BRM_BRNCD", rs.getString("BRM_BRNCD"));
+				obj.put("BRM_BRNNM", rs.getString("BRM_BRNNM")); 
+				listTrans.put(obj);
+				i++;	
+				cntfrrtvl++;
+			}
+			
+			if(cntfrrtvl!=0)
+			{
+			dataset.put("RETVAL", listTrans);
+			dataset.put("RESPCODE", cntfrrtvl);
+			}
+			else
+			{
+			dataset.put("RESPCODE", cntfrrtvl);
+			}
+			//System.out.println(dataset.toString());				
+			out.println(dataset.toString());
+		}
+		cn.close();
+	}
+	catch(Exception e)
+	{
+		//out.println("~~~~Exception  :"+e);
+		//System.out.println("\n\n\n\n\n\n");
+		System.out.println("Exception >>>"+e);
+		e.printStackTrace();
+		if(e.getMessage().indexOf("Session is Null")>-1)
+		{
+			thisBuffer.append("SessionIsNull");	
+		}
+		else
+		{
+			thisBuffer.append("ERR#ERR$"+e);		
+		}	
+	}					
+%>
+<%!
+
+%> 
+<html>
+<script language="javascript">
+function Forward()
+{
+	document.getElementById("formid").action="../deleteclearingoutwardfrdate.jsp";
+	document.getElementById("formid").method="POST";
+	document.getElementById("formid").submit();
+}
+
+</script>
+<body onLoad="Forward()">
+<form id="formid" name="formid" method="post">
+	<input type="hidden" id="CTSTOKEN" name="CTSTOKEN" value="<%=ctstoken%>">
+	<input type="hidden" id="msg" name="msg" value="<%=retStr%>">
+	<input type="hidden" id="flag" name="flag" value="<%=flag%>">
+</form>
+</body>
+</html>

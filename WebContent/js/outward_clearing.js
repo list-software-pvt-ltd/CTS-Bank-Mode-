@@ -1,0 +1,2224 @@
+// JavaScript Document
+var chqNoStr="";
+var selectedIndex=0;
+var selectedIndex1=0;
+var imagePath="";
+var chqs=null;
+var cnt=0;
+var nonUpdatedImgs=null; 
+var reddata=null;
+var micrdata=null;
+var imagenmstr="";
+var count=0;
+function getImagePath()
+{
+	var session_branch_code = document.getElementById("session_branch_code").value;
+	var url = document.URL;
+	var p = url.lastIndexOf('/');
+	imagePath = url.substr(0,p+1);
+	imagePath = imagePath+"/uploadpath_to_CHI/"+session_branch_code+"/ClearingOutward/Images/";
+}
+
+function show_warning()
+{
+	//alert('show_warning');		
+	var session_loginid = document.getElementById("session_loginid").value;
+	if(session_loginid == "null")
+	{
+		alert("Your Session Has Been Expired. Please Login Again.");		
+		menuOnClick("login.jsp");
+	}
+	else
+	{
+		var url=document.URL;
+		var p=url.lastIndexOf('/');
+		var baseurl=url.substr(0,p+1);
+		baseurl=baseurl+"getCo_Warning.jsp";
+		document.getElementById("para_form").style.display='';
+		document.getElementById("formid").style.display='';
+		document.getElementById("formid").src=baseurl;	//center_frm
+	}
+}//show_warning
+
+function closeWindow()
+{
+	var session_loginid = document.getElementById("session_loginid").value;
+	if(session_loginid == "null")
+	{
+		alert("Your Session Has Been Expired. Please Login Again.");
+		menuOnClick("login.jsp");
+	}
+	else
+	{
+		document.getElementById("para_form").style.display='none';
+	}
+}
+
+
+function browswChqs(readBackgroundVal)
+{
+	var session_loginid = document.getElementById("session_loginid").value;
+	if(session_loginid == 'null')
+	{
+		alert("Your Session Has Been Expired. Please Login Again.");		
+		menuOnClick("login.jsp");
+	}
+	else
+	{
+		document.getElementById("waiting").style.display=' ';
+		var urlbase=document.URL;
+		var p=urlbase.lastIndexOf('/');
+		urlbase=urlbase.substr(0,p+1);	
+		urlbase=urlbase+"jsp/fetch_imageName.jsp?chqDtl="+readBackgroundVal;
+		cts_ajax_getImageName(urlbase)
+	}
+}//browswChqs
+function cts_ajax_getImageName(url)
+{
+	if (window.XMLHttpRequest)
+	{
+		req = new XMLHttpRequest();
+		req.onreadystatechange = cts_process_getImageName;
+		req.open("GET", url, true);
+		req.send(null);
+	}
+	// branch for IE/Windows ActiveX version
+	else if (window.ActiveXObject)
+	{
+		req = new ActiveXObject("Microsoft.XMLHTTP");
+		if (req)
+		{
+			req.onreadystatechange=cts_process_getImageName;
+			req.open("GET", url, true);
+			req.send(null);
+		}
+	}
+}//cts_ajax_getImageName(baseurl)
+function cts_process_getImageName()
+{
+	if(req.readyState == 4)
+	{
+		if(req.status == 200)
+		{
+			var res = req.responseText;
+			if(!(res.indexOf('NOCHEQUEIMAGE')>-1))
+			{
+				chqs=res.split('#');
+				//alert('chqs>>'+chqs);
+				if(chqs.length<=0)
+				{
+					document.getElementById("btNext").disabled=true;
+					document.getElementById("btBack").disabled=true;
+				}
+				else
+				{
+					document.getElementById("btNext").disabled=false;
+					getImagePath();
+					//showImages();
+				}
+			}
+			else
+			{
+				//alert('No Image Found.');	
+			}
+		}
+		else
+		{
+			alert("Problem In Retrieving Data.Please Check The Server Connection.");
+			document.getElementById("waiting").style.display='none';
+		}
+	}
+	
+}//cts_process_getImageName
+
+function nextButnClicked()
+{
+	var singleChqNo=nonUpdatedImgs.split("~");
+	if(selectedIndex<singleChqNo.length)
+	{
+		
+		selectedIndex++;
+		if(selectedIndex>(singleChqNo.length*1)-2)
+		{
+			document.getElementById("btNext").disabled=true;
+		}
+		showImages();
+	}
+	else
+	{
+		document.getElementById("btNext").disabled=true;
+	}
+}
+
+function showImages()
+{	
+	if(nonUpdatedImgs.indexOf("~")>-1)
+	{
+		var singleChqNo=nonUpdatedImgs.split("~");
+		var chqNo=singleChqNo[selectedIndex].split("#");
+		document.getElementById('img_frnt').src = imagePath+chqNo[2];
+		document.getElementById('img_back').src = imagePath+chqNo[1];
+		
+		enlargeCheque_outwardchqs('img_frnt');
+		if(selectedIndex>=(singleChqNo.length*1)-2)
+		{
+			document.getElementById("btNext").disabled=true;
+		}
+		else
+		{
+			document.getElementById("btNext").disabled=false;
+		}
+		if(selectedIndex<=0)
+		{
+			//document.getElementById("btBack").disabled=true;
+		}
+		else
+		{
+			document.getElementById("btBack").disabled=false;
+		}
+	}
+}
+
+function backButnClicked()
+{
+	if(selectedIndex>0)
+	{
+		//showImages();
+		selectedIndex--;
+		showImages();
+		if(selectedIndex<=0)
+		{
+			document.getElementById("btBack").disabled=true;
+		}
+	}
+	else
+	{
+		document.getElementById("btBack").disabled=true;
+	}
+}
+
+function btnRefresh()
+{
+
+}
+function getClearingOutwardFile()
+{	
+	
+	document.getElementById("Nopickfile").style.display = 'none';		  
+	document.getElementById("yespickfile").style.display = 'none';	
+	
+	var session_user_role = document.getElementById("session_user_role").value;
+	var session_loginid = document.getElementById("session_loginid").value;
+	var session_branch_main = document.getElementById("session_branch_main").value;
+	var retStr=document.getElementById("retStr").value;
+	var pickstyle=document.getElementById("pickstyle").value;
+	var hdMsg1=document.getElementById("hdMsg1").value;
+	if(session_loginid == "null")
+	{
+		alert("Your Session Has Been Expired. Please Login Again.");	
+		menuOnClick("login.jsp");
+	}
+	else
+	{
+		//alert("retStr=="+retStr+"pickstyle="+pickstyle+" hdMsg1 ="+hdMsg1);
+	
+		if(count==0 && pickstyle=='Y' && retStr=='NA' && hdMsg1=="FIRSTTIME")
+		{
+			var val=confirm("Do you want to pickup option for zip scanner folder upload?");
+			if(val==true)
+		    {			  
+				document.getElementById("yespickfile").style.display = '';
+				document.getElementById("Nopickfile").style.display = 'none';
+				pick_flag=true;
+				
+			}
+			else
+			{		
+				document.getElementById("yespickfile").style.display = 'none';	
+		        document.getElementById("Nopickfile").style.display = '';	
+		        pick_flag=false;		
+		        pickstyle=='Y' ;
+		        retStr="SUCCESS"  
+		        // alert("222 retStr=="+retStr+"pickstyle="+pickstyle);
+			}
+			count=1;
+		}
+		else
+		{
+		      pickstyle=='Y' ;
+		      retStr=="SUCCESS";
+		      count=1;  
+		      document.getElementById("yespickfile").style.display = 'none';	
+		        document.getElementById("Nopickfile").style.display = '';	
+		}
+	//	alert("again retStr=="+retStr+"pickstyle="+pickstyle);
+	/*	var val=confirm("Do you want to pickup option for zip scanner folder upload?");
+		if(val==true)
+	    {			  
+			document.getElementById("yespickfile").style.display = '';
+			document.getElementById("Nopickfile").style.display = 'none';
+			pick_flag=true;
+			
+		}
+		else
+		{
+				 
+				  document.getElementById("yespickfile").style.display = 'none';	
+	        	  document.getElementById("Nopickfile").style.display = '';	
+	        	  pick_flag=false;		  
+		}	
+		*/
+		
+	
+		//alert("retStr=="+retStr+"  hdMsg1="+hdMsg1);//res.indexOf('NOCHEQUEIMAGE')>-1
+		
+		if(hdMsg1.indexOf('Uploaded Successfully')>-1)
+		{
+			alert("Uploaded Successfully.."+session_branch_main);
+				if(session_branch_main=='Y'){
+					menuOnClick("merging.jsp");
+			}
+			else{
+					menuOnClick("main.jsp");
+			}
+			
+		}	
+		if(pickstyle=='Y' && retStr=='NA' )
+		{
+		//	document.getElementById("Nopickfile").style.display = 'none';	
+		//	document.getElementById("yespickfile").style.display = '';
+			
+		}
+		else if(pickstyle=='Y' && retStr=="SUCCESS")
+		{
+		//	document.getElementById("Nopickfile").style.display = '';	
+		//	document.getElementById("yespickfile").style.display = 'none';
+			getImagePath();
+			var d=document.getElementById("menu_clearingOutward");
+			//alert("d="+d);
+			d.className = ' active';
+			
+			//alert("hdMsg1====="+hdMsg1);
+			if(session_user_role == 'M')
+			{			
+				document.getElementById("submitbutton").style.display='none';
+			}
+			if(hdMsg1!="N")
+			{
+				if(hdMsg1=="FIRSTTIME" || hdMsg1=="SUCCESS")
+				{
+					document.getElementById("waiting").style.display='';
+					var doICallMerge=document.getElementById("hd_doICallAjax").value;
+					//alert("doICallMerge====="+doICallMerge);
+					if(doICallMerge=="Y")
+					{
+						var url=document.URL;
+						var p=url.lastIndexOf('/');
+						baseurl=url.substr(0,p+1);
+						baseurl=baseurl+"jsp/getCOFiles.jsp";
+						cts_AjaxData0(baseurl);
+					}
+					else
+					{
+						fetch_outward_cheques();
+					}
+				}
+				else if(hdMsg1=="ERRORFILE" )
+				{
+			      alert("Problem To Reading File .Please check File");
+			 	}
+		    	else if( hdMsg1=="ERRORSQL")
+				{
+				  alert("Problem In Data. Please Check data");
+				}
+			     else if(hdMsg1=="ERRORLOAD")
+				{
+			     	alert("Problem to load data");
+				}
+				else if(hdMsg1=="Uploaded Successfully")
+				{
+					alert("Uploaded Successfully..");
+				}
+				else
+				{
+					fetch_outward_cheques();
+				}
+			}	  
+		}
+		else
+		{	
+		
+			getImagePath();
+			var d=document.getElementById("menu_clearingOutward");
+			d.className = ' active';
+			var hdMsg1=document.getElementById("hdMsg1").value;
+			if(session_user_role == 'M')
+			{			
+				document.getElementById("submitbutton").style.display='none';
+			}
+			if(hdMsg1!="N")
+			{
+				if(hdMsg1=="FIRSTTIME" || hdMsg1=="SUCCESS")
+				{
+					document.getElementById("waiting").style.display='';
+					var doICallMerge=document.getElementById("hd_doICallAjax").value;
+					//alert("doICallMerge=="+doICallMerge);
+					if(doICallMerge=="Y")
+					{
+						var url=document.URL;
+						var p=url.lastIndexOf('/');
+						baseurl=url.substr(0,p+1);
+						baseurl=baseurl+"jsp/getCOFiles.jsp";
+						cts_AjaxData0(baseurl);
+					}
+					else
+					{
+						fetch_outward_cheques();
+					}
+				}
+				else if(hdMsg1=="ERRORFILE" )
+				{
+			      alert("Problem To Reading File .Please check File");
+			 	}
+		    	else if( hdMsg1=="ERRORSQL")
+				{
+				  alert("Problem In Data. Please Check data");
+				}
+			     else if(hdMsg1=="ERRORLOAD")
+				{
+			     	alert("Problem to load data");
+				}
+				else if(hdMsg1=="Uploaded Successfully")
+				{
+					alert("Uploaded Successfully..");
+				}
+				else
+				{
+					fetch_outward_cheques();
+				}
+			}
+	  	} 	  	
+	}
+}
+function cts_AjaxData0(url)
+{
+	if (window.XMLHttpRequest)
+	{
+		req = new XMLHttpRequest();
+		req.onreadystatechange = cts_process0;
+		req.open("GET", url, true);
+		req.send(null);
+	}
+	// branch for IE/Windows ActiveX version
+	else if (window.ActiveXObject)
+	{
+		req = new ActiveXObject("Microsoft.XMLHTTP");
+		if (req)
+		{
+			req.onreadystatechange =  cts_process0;
+			req.open("GET", url, true);
+			req.send(null);
+		}
+	}
+}
+function cts_process0()
+{
+ 	if(req.readyState == 4)
+	{
+		if(req.status == 200)
+		{
+			document.getElementById("waiting").style.display='none';
+			var res = req.responseText;
+		//	alert("ASSB======"+res);		
+			if(res.trim().indexOf(": SUCCESS") > -1 || res.indexOf("faulty Cheque") > -1 || res.indexOf('SUCCESS') > -1)
+			{
+				
+				if(res.indexOf("faulty Cheque") > -1)
+				{
+					alert(res.trim());
+				}
+				else
+				{
+					alert(res.trim());
+				}
+				fetch_outward_cheques();
+			}
+			else if(res.indexOf("DUPLICATE") > -1)
+			{
+			
+				document.getElementById("waiting").style.display='none';
+				alert("Duplicate cheques Found");
+				var dupdata=res.split('~')[1].split('#')[0];
+				//alert(res);
+				imagenmstr=res.split('~')[1].split('#')[1];
+				//alert(dupdata+"==="+imagenmstr);
+				showGridDUPCHEQ(dupdata);
+				
+			}	
+			else
+			{
+				
+			//alert(res.trim());
+				document.getElementById("waiting").style.display='none';
+				var baseurl=document.URL;
+				var p=baseurl.indexOf('?');
+				baseurl=baseurl.substr(0,p);
+			}
+		}
+		else
+		{
+			//alert("res:"+res);
+			alert("Problem In Retrieving Data.Please Check The Server Connection.");
+			document.getElementById("waiting").style.display='none';
+		}
+	}
+}
+
+function fetch_outward_cheques()
+{
+	var session_loginid = document.getElementById("session_loginid").value;
+	if(session_loginid == "null")
+	{
+
+		alert("Your Session Has Been Expired. Please Login Again.");
+		
+		menuOnClick("login.jsp");
+	}
+	else
+	{
+		var val=document.getElementById("hdMsg1").value;
+		//alert("val=="+val);
+		if(val!="N")
+		{//1
+
+			if(val.indexOf("SUCCESS") > -1 || val.indexOf("FIRSTTIME")>-1 || val.indexOf("Cheque")>-1)
+			{
+				
+				if(val.indexOf("SUCCESS") > -1)
+				{
+					alert("Cheque(s) Uploaded Successfully!");
+					document.getElementById("waiting").style.display='none';
+				}
+
+				var url=document.URL;
+				var p=url.lastIndexOf('/');
+				baseurl=url.substr(0,p+1);
+				baseurl=baseurl+"jsp/fetch_outward_cheques.jsp";
+				//location.replace(baseurl);
+				cts_AjaxData1(baseurl);
+
+			}
+			else if(val.indexOf("Blocked") > -1 )
+			{
+				document.getElementById("blokedFlag").value="CHECK";
+				var data = window.confirm(val+"\n Please Delete Blocked MICR Code Cheque.");
+				if (data) 
+			    {
+					var baseurl=document.URL;
+					var p = baseurl.lastIndexOf("?");
+					baseurl = baseurl.substr(0,p);
+					document.getElementById("formid").action="deleteclearingoutwardfrdate.jsp";
+					document.getElementById("formid").method="POST";
+					document.getElementById("formid").submit();
+			    }
+				else
+				{
+					var contine = window.confirm("Do you still want to upload blocked MICRs ? ");
+					if(contine)
+					{
+						document.getElementById("hdMsg1").value="FIRSTTIME";
+						document.getElementById("blokedFlag").value="NOCHECK";
+						getClearingOutwardFile();
+						//save_con_outwardchqs();
+					} 
+					else
+					{
+						document.getElementById("blokedFlag").value="CHECK";
+						}
+					
+				}
+			}
+			else if(val.indexOf("ERRORFILE") > -1 )
+			{
+		      alert("Problem To Reading File .Please check File");
+		 	}
+	    	else if( val.indexOf("ERRORSQL") > -1 )
+			{
+			  alert("Problem In Data. Please Check data");
+			}
+		     else if(val.indexOf("ERRORLOAD") > -1 )
+			{
+		     	alert("Problem to load data");
+			}
+			else
+			{
+				//alert("********"+val);
+				//alert(val);
+				document.getElementById("waiting").style.display='none';
+
+				var url=document.URL;
+				var p=url.lastIndexOf('/');
+				baseurl=url.substr(0,p+1);
+				baseurl=baseurl+"jsp/fetch_outward_cheques.jsp";
+				cts_AjaxData1(baseurl);
+			}
+		}//1
+		else
+		{			
+			var baseurl=document.URL;
+			var p = baseurl.lastIndexOf("?");
+			baseurl = baseurl.substr(0,p);
+			document.getElementById("formid").action="outward_clearing.jsp";
+			document.getElementById("formid").method="POST";
+			document.getElementById("formid").submit();
+		}
+	}
+}
+
+function cts_AjaxData1(url)
+{
+	if (window.XMLHttpRequest)
+	{
+		req = new XMLHttpRequest();
+		req.onreadystatechange = cts_process1;
+		req.open("GET", url, true);
+		req.send(null);
+	}
+	else if (window.ActiveXObject)
+	{
+		req = new ActiveXObject("Microsoft.XMLHTTP");
+		if (req)
+		{
+			req.onreadystatechange =  cts_process1;
+			req.open("GET", url, true);
+			req.send(null);
+		}
+	}
+}
+
+function cts_process1()
+{
+ 	if(req.readyState == 4)
+	{
+		if(req.status == 200)
+		{
+			var res = req.responseText;
+
+			record=res;
+			//alert("res:"+res);
+			setData_outwardchqs(res);
+			//allvehres=res;
+
+			var rcnt=document.getElementById("rcnt").value;
+			if(rcnt>18)
+			{
+				//alert("in if");
+				var div_out_chq=document.getElementById("div_out_chq");
+				div_out_chq.style.overflow="scroll";
+				div_out_chq.style.height="90%";
+			}
+			else
+			{
+				var div_out_chq=document.getElementById("div_out_chq");
+				div_out_chq.style.overflow="inherit";
+				div_out_chq.style.height="90%";
+			}
+
+		}
+		else
+		{
+			alert("Problem In Retrieving Data.Please Check The Server Connection.");
+			document.getElementById("waiting").style.display='none';
+		}
+	}
+}
+
+function setData_outwardchqs(rec)
+{
+	var val=rec.split("!^~!"); 
+	var hdMsg1=document.getElementById("hdMsg1").value;
+	//rec = rec.trim();
+	rec=val[0];
+	nonUpdatedImgs=val[1];
+	//alert("nonUpdatedImgs="+nonUpdatedImgs);
+	 reddata=val[2];
+	 micrdata=val[3];
+	var rcnt=document.getElementById("rcnt").value;
+	/*if(rcnt>1)
+	{
+		resetRows();
+	}*/
+	var p2fcnt=0;
+	var redcount=0;
+	if(rec.length>1)
+	{
+		//alert(rec);
+		var stats = rec.split("!P!");
+		//alert("stats [1]"+stats[1]);
+		var stats_data = stats[1].split("#");
+		document.getElementById("txt_tot_no_of_chq").value = stats_data[0];
+		document.getElementById("txt_tot_amt").value =" "+ stats_data[1].trim();
+
+		var data =rec.split("$");
+		//alert("data.length:"+data.length);
+		for(t=0;t<data.length-1;t++)
+		{
+			var bclist=data[t].split("#");
+			//alert(data[t]);
+			//alert("bclist[1]"+bclist[1]+"\n hdMsg1 :"+hdMsg1+"hdMsg1.indexOf(Successfully)"+hdMsg1.indexOf("Successfully"));
+			if(bclist[1]=="NOCHEQUE" && hdMsg1=="FIRSTTIME" )
+			{
+				alert("Cheques Not Available!");
+				//document.getElementById("waiting").style.display='none';
+			}
+			else if(bclist[1]=="NOCHEQUE" && (hdMsg1.indexOf("Successfully")>-1 || hdMsg1=="SUCCESS"))
+			{
+				alert("All Cheques Uploaded!");
+				//document.getElementById("waiting").style.display='none';
+			}
+			else if(hdMsg1=="ERRORFILE" )
+			{
+		      alert("Problem To Reading File .Please check File");
+		 	}
+	    	else if( hdMsg1=="ERRORSQL")
+			{
+			  alert("Problem In Data. Please Check data");
+			}
+		     else if(hdMsg1=="ERRORLOAD")
+			{
+		     	alert("Problem to load data");
+			}
+			else
+			{
+				//alert("in else...");
+				var rcnt=document.getElementById("rcnt").value;
+				//alert(rcnt);
+				addRows_outwardchqs('tab_out_chq');
+				//alert(bclist[3]);
+				document.getElementById("txt_chqno"+rcnt).value=bclist[0]+"_"+bclist[1]+":"+bclist[2];
+				document.getElementById("hd_amount"+rcnt).value = bclist[5];
+				//alert("bclist[3]="+bclist[3]);
+				var hiddenVar="";
+				//if((bclist[6]*1)>=20 && (bclist[6]*1)<=27)
+				if((bclist[7])=="Y")
+						p2fcnt++;
+				if(bclist[3]=='null')
+				{
+					document.getElementById("txt_chqno"+(t*1+1)).style.background='#FF0000';
+					document.getElementById("sel_chq"+(t*1+1)).disabled=false;
+					document.getElementById("submitbutton").disabled=true;
+					hiddenVar="hd_chqInfo"+(t*1+1);
+					document.getElementById(hiddenVar).value=bclist[0]+"_"+bclist[1]+":"+bclist[2];
+					redcount++;
+				}
+				else
+				{
+					var abc="hd_imgnm"+(t*1+1);
+					
+					document.getElementById(abc).value=bclist[3].substring(1,(bclist[3].length-5));
+					hiddenVar="hd_chqInfo"+(t*1+1);
+					document.getElementById(hiddenVar).value=bclist[0]+"_"+bclist[1]+":"+bclist[2];
+					//alert("Transaction Code="+(bclist[6]*1));
+
+				}
+			}
+		}
+		//alert(reddata.length+"===="+micrdata.length);
+		if(redcount>0 && document.getElementById("hd_faultyMICR_poppup").value=='Y')
+		{
+			
+			showGrid(reddata);
+			
+		}
+		if(micrdata.length>16 && document.getElementById("hd_faultyMICR_poppup").value=='Y')
+		{
+			showGridMICR(micrdata);
+		}
+			
+			//alert(p2fcnt);
+		//if(p2fcnt>0)
+		{
+			var messp2f="You Have "+p2fcnt+" Cheques For Paper To Follow";
+			alert(messp2f);
+			document.getElementById("txtForP2F").value=messp2f;
+		}
+		
+	}
+	//document.getElementById("sel_chq1").click();
+	enlargeCheque_outwardchqs('img_frnt');
+	if(document.getElementById("submitbutton").disabled)
+	{
+		alert("Cheque(s) Shown In Red Are Not Scanned.\nPlease Scan The Cheque(s)");
+	}
+	//alert("----------- 1 ----------");
+	document.getElementById("waiting").style.display='none';
+}
+
+function addRows_outwardchqs(tableID)
+{
+	var session_user_role = document.getElementById("session_user_role").value;
+
+	var table=document.getElementById(tableID);
+	var rcnt=document.getElementById("rcnt").value;
+	var rowCount = table.rows.length;
+	//alert(rowCount);
+
+	var row = table.insertRow(rowCount);
+
+	var cell1 = row.insertCell(0);
+	cell1.style.width="70%";
+	var element1 = document.createElement("input");
+	element1.type = "text";
+	element1.style.border="none";
+	element1.style.background="transparent";
+	element1.name="txt_chqno"+rcnt;
+	element1.id="txt_chqno"+rcnt;
+	element1.value=rcnt;
+	element1.size="35";
+	element1.setAttribute("readonly", "true");
+	//element1.disabled=true;
+	cell1.appendChild(element1);
+
+	var cell2 = row.insertCell(1);
+	cell2.style.width="15%";
+	cell2.align="center";
+	var element2 = document.createElement("input");
+	element2.id="sel_chq"+rcnt;
+	element2.name="sel_chq";
+	element2.type = "radio";
+	//element2.style.width="100%";
+	element2.onclick=function (){fetchValues_outwardchqs();};
+	cell2.appendChild(element2);
+
+	var cell3 = row.insertCell(2);
+	cell3.style.width="15%";
+	cell3.align="center";
+	var element3 = document.createElement("input");
+	element3.id="chk_chq"+rcnt;
+	element3.name="chk_chq";
+	element3.type = "checkbox";
+	element3.onclick=function (){chk_selected_outward_chqs();};
+	if(session_user_role.indexOf("C") > -1)
+	{
+		cell3.appendChild(element3);
+	}
+
+	var element4 = document.createElement("input");
+	element4.id="hd_amount"+rcnt;
+	element4.name="hd_amount";
+	element4.type = "hidden";
+	cell3.appendChild(element4);
+
+	var element5 = document.createElement("input");
+	element5.id="hd_imgnm"+rcnt;
+	element5.name="hd_imgnm"+rcnt;
+	element5.type = "hidden";
+	cell3.appendChild(element5);
+
+	var element6 = document.createElement("input");
+	element6.id="hd_chqInfo"+rcnt;
+	element6.name="hd_chqInfo"+rcnt;
+	element6.type = "hidden";
+	cell3.appendChild(element6);
+	
+	var cell4 = row.insertCell(3);
+	var element7 = document.createElement("input");
+	element7.type = "text";
+	element7.style.width="100%";
+	element7.style.border="none";
+	element7.style.background="transparent";
+	element7.name="txt_chqsrno"+rcnt;
+	element7.id="txt_chqsrno"+rcnt;
+	element7.value=rcnt;
+	element7.setAttribute("readonly", "true");
+	//element1.disabled=true;
+	cell4.appendChild(element7);
+
+	rcnt=rcnt*1+1;
+	document.getElementById("rcnt").value=rcnt;
+	document.getElementById("waiting").style.display='none';
+}
+
+function fetchValues_outwardchqs()
+{
+	 var table = document.getElementById("tab_out_chq");
+	 var rowCount = table.rows.length;
+	 var color;
+	 var singleChqNo=nonUpdatedImgs.split("~");
+	 for(var i=1; i<rowCount; i++)
+	 {
+		var row = table.rows[i];
+		var radio = row.cells[1].childNodes[0];
+		var j=i;
+		var obj=document.getElementById("txt_chqno"+i);
+		color="##"+obj.style.background+"##";
+	//	alert('color='+color);
+		var chqDtl="";
+		if(true == radio.checked && color!='##rgb(255, 204, 204)##')
+		//if(true == radio.checked)
+		{
+			cnt=cnt*1+1;
+			chqDtl=document.getElementById("hd_chqInfo"+i).value;
+			var amt=document.getElementById("hd_amount"+i).value
+			document.getElementById("hd_selectCnt").value=cnt;
+			
+			
+			document.getElementById("txt_chqno"+i).style.background = '#66CC99';
+			
+			var chq_dtl=document.getElementById("hd_imgnm"+i).value;
+			fetch_cbsFileData(chq_dtl,color,amt);
+			//alert(chq_dtl);
+			selectedIndex=i-1;
+			var chq_no = chq_dtl;//chq_dtl.split(':')[0];
+			//alert("chq_no : "+chq_no);
+			document.getElementById('img_enlarged').src = null;
+			var session_branch_code = document.getElementById("session_branch_code").value;
+			 var url = document.URL;
+			 var p = url.lastIndexOf('/');
+			 imgpath = url.substr(0,p+1);
+			 imgpath = imgpath +"/uploadpath_to_CHI/"+session_branch_code+"/ClearingOutward/Images/";
+			//alert("--imgpath:"+imgpath+"F"+chq_no+"G.jpg");
+
+			document.getElementById('img_frnt').src = imgpath+"F"+chq_no+"G.jpg";//document.getElementById('img_frnt').src = imgpath+"f_"+chq_no+"_G.jpg";
+			document.getElementById('img_back').src = imgpath+"R"+chq_no+"G.jpg";//document.getElementById('img_back').src = imgpath+"r_"+chq_no+"_G.jpg";
+			document.getElementById("sel_chq"+i).style.background = '#66CC99';
+			
+			var baseurl1=document.URL;
+			var p=baseurl1.lastIndexOf('/');
+			baseurl1=baseurl1.substr(0,p+1);
+		
+		}
+		else
+		{
+			//alert("in elser"+color);
+			if(color!='##rgb(255, 204, 204)##' && color!='##rgb(255, 0, 0)##')
+			{
+				document.getElementById("txt_chqno"+i).style.background = '#d5d5e5';
+				document.getElementById("sel_chq"+i).style.background = '#d5d5e5';
+			}
+		}
+		if(true == radio.checked && color=='##rgb(255, 0, 0)##')
+		{
+			var chqNo=singleChqNo[selectedIndex].split("#");
+			//alert("In radio.checked Red Color===");
+			document.getElementById('img_frnt').src = imgpath+chqNo[2];
+			document.getElementById('img_back').src = imgpath+chqNo[1];
+			//alert("In Red Background");
+			document.getElementById("txt_chqno"+i).style.background = '#FF0000';
+			document.getElementById("sel_chq"+i).style.background = '#FF0000';
+			document.getElementById("txt_hdnIsRedBackground").value="YES";
+			chqDtl=document.getElementById("hd_chqInfo"+i).value;
+			document.getElementById("txt_hdnRedBackgroundVal").value=chqDtl;
+			
+			//browswChqs(document.getElementById("dyna_txt_chqno").value);
+			//fetch_imageNameFromCheque(chqDtl);
+		}
+	}
+	enlargeCheque_outwardchqs('img_frnt');
+	
+	
+}
+function enlargeCheque_outwardchqs(chq_type)
+{
+	//alert("in enlargeCheque() chq_type:"+chq_type);
+	var session_branch_code = document.getElementById("session_branch_code").value;
+	//alert("session_branch_code:"+session_branch_code);
+	var url=document.getElementById(chq_type).src;
+	//alert("url:"+url);
+	//"uploadpath_to_CHI/9/ClearingOutward/Images/f_094966_416211001.tif"
+	var p=url.indexOf('uploadpath_to_CHI/'+session_branch_code+'/ClearingOutward/Images/');
+	imgurl=url.substr(p);
+	//alert("imgurl:"+imgurl);
+	document.getElementById('img_enlarged').src = imgurl;
+	document.getElementById('img_popup').src = imgurl;
+}
+
+function save_con_outwardchqs()
+{
+	//save and convert outward return cheques
+	var val=false;
+	//alert(document.getElementById("txt_tot_amt_sel_chq").value);
+	if(document.getElementById("txt_no_of_sel_chq").value !=document.getElementById("txt_tot_no_of_chq").value && document.getElementById("txt_tot_amt_sel_chq").value!="0")
+	{
+		val=confirm("Do You Want To Rescan Non-Selected Cheques?\nThis Will Delete Exiting Images of Those Non-Selected Cheques.");
+		//alert("confirm value"+val);
+	}
+	else if(document.getElementById("txt_tot_amt_sel_chq").value=="0")
+	{
+		alert("Please Select Cheque(s) To Upload.");
+		document.getElementById("waiting").style.display='none';
+	}
+
+	if(document.getElementById("txt_tot_amt_sel_chq").value.trim()*1==document.getElementById("txt_tot_amt").value.trim()*1 && document.getElementById("txt_tot_amt_sel_chq").value!="0")
+	{
+		val = true;
+	}
+	{
+		//document.getElementById("txt_tot_amt_sel_chq").value = document.getElementById("txt_tot_amt").value;
+
+		var table = document.getElementById("tab_out_chq");
+		var rowCount = table.rows.length;
+		var chqs = '', chq_no = '',all_chq = '';
+		var sel_cnt = 0;
+		var flag = 'OK';
+
+		for(var i=1; i<rowCount; i++)
+		{
+			var row = table.rows[i];
+			//alert("row :"+row);
+			var chkbox = row.cells[2].childNodes[0];
+			//alert("chkbox :"+chkbox.checked);
+			var obj=document.getElementById("hd_imgnm"+i);//var obj=document.getElementById("txt_chqno"+i);
+			var obj1=document.getElementById("hd_chqInfo"+i).value;
+			
+			if(true == chkbox.checked)
+			{
+				sel_cnt ++;
+				var sel_chq = obj.value;
+				var payeeNm=obj1.split(":")[1];
+				
+				if(all_chq.indexOf(sel_chq) > -1)
+				{
+					flag = 'DUPLICATE';
+					//break;
+				}
+				if(payeeNm=="NULL" ||payeeNm.length==0||payeeNm=="NA")
+				{
+					//alert('In payeeNm');
+					flag='PAYEENAME is NULL'+':'+obj1.split(":")[0].split('_')[0];
+					break;
+					
+				}
+				//all_chq = "f_"+sel_chq+".tif"+"!@!"+"r_"+sel_chq+".tif"+"!@!"+"f_"+sel_chq+"_G.jpg" + "!@!";
+				chqs = "F"+sel_chq+".tif"+"!@!";//all_chq = "f_"+sel_chq+".tif"+"!@!";//-------+"r_"+sel_chq+".tif"+"!@!"+"f_"+sel_chq+"_G.jpg" + "!@!";
+				/*
+				all_chq = "f_121952"
+				*/
+				all_chq =all_chq+ chqs;
+				//chq_no = chq_no +sel_chq+"!@!";
+				
+			}
+
+		}
+		
+		if(val)
+		{
+			document.getElementById("waiting").style.display='';
+			//alert("In If");
+			var session_loginid = document.getElementById("session_loginid").value;
+			if(session_loginid == "null")
+			{
+				alert("Your Session Has Been Expired. Please Login Again.");
+				menuOnClick("login.jsp");
+			}
+			else
+			{				
+				if(sel_cnt == 0)
+				{
+					alert("Please Select Cheque(s) To Upload.");
+					document.getElementById("waiting").style.display='none';
+				}
+				else
+				{
+					if(flag == 'DUPLICATE')
+					{
+						alert("Duplicate Cheque Number Selected.");
+						document.getElementById("waiting").style.display='none';
+					}
+					else if(flag.indexOf("PAYEENAME is NULL")>-1)
+					{
+						alert("Payee Name Of Cheque -"+obj1.split(":")[0].split('_')[0]+"  is null");
+						document.getElementById("waiting").style.display='none';
+					}					
+					else
+					{
+						
+						if(document.getElementById("blokedFlag").value=='NOCHECK'){
+							getClearingOutwardFile();
+							document.getElementById("blokedFlag").value;
+							document.getElementById("fileName").value=all_chq;
+							document.getElementById("formid").action="jsp/UploadServlet.jsp";
+							document.getElementById("formid").submit();
+						}
+						else
+						{
+							document.getElementById("blokedFlag").value;
+							document.getElementById("fileName").value=all_chq;
+							document.getElementById("formid").action="jsp/UploadServlet.jsp";
+							document.getElementById("formid").submit();
+						}
+						    
+					}
+				}
+			}
+		}
+	}
+}
+
+function update_co_cbs_outwardchqs()
+{
+	var dyna_txt_chqno=document.getElementById("dyna_txt_chqno").value;
+	var dyna_txt_bodf=document.getElementById("dyna_txt_bodf").value;
+	var dyna_txt_sortcd=document.getElementById("dyna_txt_sortcd").value;
+	var dyna_txt_trCd=document.getElementById("dyna_txt_trCd").value;
+	var dyna_txt_amt=document.getElementById("dyna_txt_amt").value;
+	var dyna_txt_accNo=document.getElementById("dyna_txt_accNo").value;
+	var dyna_txt_payeeNm=document.getElementById("dyna_txt_payeeNm").value;
+	var dyna_txt_clearingType=document.getElementById("dyna_txt_clearingType").value;
+	var txt_ptof=document.getElementById("txt_ptof").value;
+	
+	var hd_chqInfo=document.getElementById("hd_chqInfo").value;
+	var hd_bodf=document.getElementById("hd_bodf").value;
+	var hd_sortCd=document.getElementById("hd_sortCd").value;
+	var hd_TrCd=document.getElementById("hd_TrCd").value;
+	var hd_amt=document.getElementById("hd_amt").value;
+	var hd_accNo=document.getElementById("hd_accNo").value;
+	var hd_payeeNm=document.getElementById("hd_payeeNm").value;
+	var hd_clearingType=document.getElementById("hd_clearingType").value;
+	
+	
+	if(!(isNonNumeric(dyna_txt_chqno)))
+		{//2
+			alert('Cheque Number must be numeric.');
+			document.getElementById('dyna_txt_chqno').focus();
+		}//2
+		else if(dyna_txt_chqno.length!=6)
+		{//2
+			alert('Cheque Number must be 6 digit.');
+			document.getElementById('dyna_txt_chqno').focus();
+		}//2
+		else if(!(isNonNumeric(dyna_txt_bodf)))
+		{//2
+			alert('Bank Of First deposite must be numeric.');
+			document.getElementById('dyna_txt_bodf').focus();
+		}//2
+		else if(dyna_txt_bodf.length!=9)
+		{//2
+			alert('Bank Of First deposite must be 9 digit.');
+			document.getElementById('dyna_txt_bodf').focus();
+		}//2
+		else if(!(isNonNumeric(dyna_txt_sortcd)))
+		{//2
+			alert('Sort Code must be numeric.');
+			document.getElementById('dyna_txt_sortcd').focus();
+		}//2
+		else if(dyna_txt_sortcd.length!=9)
+		{//2
+			alert('Sort Code must be 9 digit.');
+			document.getElementById('dyna_txt_sortcd').focus();
+		}//2
+		
+		else if(!(isNonNumeric(dyna_txt_trCd)))
+		{//2
+			alert('Transaction Code must be numeric.');
+			document.getElementById('dyna_txt_trCd').focus();
+		}//2
+		else if(dyna_txt_trCd.length < 2 || dyna_txt_trCd.length > 3){
+				alert('Transaction Code must be 2 or 3 digit.');
+				document.getElementById('dyna_txt_trCd').focus();
+		}	
+		else if(!(isNonNumeric(dyna_txt_amt)))
+		{//2
+			alert('Amount must be numeric.');
+			document.getElementById('dyna_txt_amt').focus();
+		}//2
+		else if(!(isNonNumeric(dyna_txt_accNo)))
+		{//2
+			alert('Account Number must be numeric.');
+			document.getElementById('dyna_txt_accNo').focus();
+		}//2
+		else if(dyna_txt_accNo.length< 6 || dyna_txt_accNo.length >7)
+		{//2
+				alert('Account Number must be equal to 6 or 7 digit.');
+				document.getElementById('dyna_txt_accNo').focus();
+			
+		}//2
+		else if(!(isNonNumeric(dyna_txt_clearingType)))
+		{//2
+			alert('Clearing Type must be numeric.');
+			document.getElementById('dyna_txt_clearingType').focus();
+		}//2
+		else if(dyna_txt_clearingType.length!=2)
+		{//2
+			alert('Clearing Type must be 2 digit.');
+			document.getElementById('dyna_txt_clearingType').focus();
+		}//2
+		else if(dyna_txt_payeeNm.length=="NA"||dyna_txt_payeeNm.length==0)
+		{
+			alert('Please Enter Payee Account Name.');
+			document.getElementById('dyna_txt_payeeNm').focus();
+		}	
+		else if(dyna_txt_payeeNm.length>26)
+		{
+			alert('Please Enter Payee Account Name is less than 25 character');
+			document.getElementById('dyna_txt_payeeNm').focus();
+		}	
+		
+		else
+		{//2
+		
+			/*if(dyna_txt_trCd.length == 2 )
+			{
+					dyna_txt_trCd=lPad( dyna_txt_trCd,  3,  "0");
+			}
+			if(dyna_txt_accNo.length == 6){
+				dyna_txt_accNo=lPad( dyna_txt_accNo,  7,  "0");
+			}*/
+			
+		//	alert(dyna_txt_trCd+"=####="+dyna_txt_accNo+"***** "+dyna_txt_accNo.length);
+			//if(dyna_txt_accNo.length>6)
+			{
+				//dyna_txt_accNo=dyna_txt_accNo.substring(dyna_txt_accNo.length-6, dyna_txt_accNo.length);
+				//dyna_txt_accNo=dyna_txt_accNo.substring(dyna_txt_accNo.length-7, dyna_txt_accNo.length); SAM
+				//dyna_txt_trCd=dyna_txt_trCd.substring(dyna_txt_trCd.length-3, dyna_txt_trCd.length); SAM
+				//alert("dyna_txt_trCd="+dyna_txt_trCd+"  dyna_txt_accNo="+dyna_txt_accNo);
+				
+		var url_path="jsp/updateCoFilesRecord.jsp?dyna_txt_chqno="+dyna_txt_chqno+"&dyna_txt_bodf="+dyna_txt_bodf+
+		"&dyna_txt_sortcd="+dyna_txt_sortcd+"&dyna_txt_trCd="+dyna_txt_trCd+"&dyna_txt_amt="+dyna_txt_amt+
+		"&dyna_txt_accNo="+dyna_txt_accNo+"&dyna_txt_payeeNm="+dyna_txt_payeeNm+"&dyna_txt_clearingType="+
+		dyna_txt_clearingType+"&hd_chqInfo="+hd_chqInfo+"&hd_bodf="+hd_bodf+"&hd_sortCd="+hd_sortCd+"&hd_TrCd="+hd_TrCd+
+		"&hd_amt="+hd_amt+"&hd_accNo="+hd_accNo+"&hd_payeeNm="+hd_payeeNm.toUpperCase()+"&hd_clearingType="+hd_clearingType+"&txt_ptof="+txt_ptof;
+		
+			var baseurl=document.URL;
+			var p=baseurl.lastIndexOf('/');
+			baseurl=baseurl.substr(0,p+1);
+			baseurl=baseurl+url_path;
+			document.getElementById("waiting").style.display='';
+			cts_ajax_updateCbsData(baseurl);
+			}
+		
+		}//2
+}
+function isNonNumeric(field)
+{
+	var flg=false;
+	if(!(isNaN(field)))
+	{
+		flg=true;	
+	}
+	return flg;
+}
+function cts_ajax_updateCbsData(baseurl)
+{
+
+	if (window.XMLHttpRequest)
+	{
+		req = new XMLHttpRequest();
+		req.onreadystatechange = cts_process_updateCbsData;
+		req.open("GET", baseurl, true);
+		req.send(null);
+	}
+	// branch for IE/Windows ActiveX version
+	else if (window.ActiveXObject)
+	{
+		req = new ActiveXObject("Microsoft.XMLHTTP");
+		if (req)
+		{
+			req.onreadystatechange=cts_process_updateCbsData;
+			req.open("GET", baseurl, true);
+			req.send(null);
+		}
+	}
+}
+function cts_process_updateCbsData()
+{
+	if(req.readyState == 4)
+	{
+		if(req.status == 200)
+		{
+			/*var res = req.responseText;
+			if(res.indexOf("Success")>-1)
+				alert("Uploaded Successfully.");*/
+				var res = req.responseText;		
+				alert(res.trim().split("~@~")[1]);
+		}
+		else
+		{
+			alert("Problem In Retrieving Data.Please Check The Server Connection.");
+			document.getElementById("waiting").style.display='none';
+		}
+	}
+	document.getElementById("waiting").style.display='none';
+}
+function chk_selected_outward_chqs()
+{
+	//alert("in chk_selected_outward_chqs");
+	var tot_amt = 0;
+	var table = document.getElementById("tab_out_chq");
+	var rowCount = table.rows.length;
+	var sel_cnt = 0;
+	for(var i=1; i<rowCount; i++)
+	{
+		var row = table.rows[i];
+		//alert("row :"+row);
+		var chkbox = row.cells[2].childNodes[0];
+		//alert("chkbox :"+chkbox.checked);
+
+		var obj=document.getElementById("txt_chqno"+i);
+
+		var amt = document.getElementById("hd_amount"+i);
+
+		//alert("amt_val :"+amt_val);
+
+		if(true == chkbox.checked)
+		{
+			var amt_val = amt.value;
+			sel_cnt ++;
+			tot_amt =to_number( (tot_amt *1) + (amt_val*1));
+		}
+	}
+	//alert("sel_cnt:"+sel_cnt+"\nrowCount-1:"+(rowCount-1));
+	var chkbox = document.getElementById("chk_selall");
+	if(sel_cnt != (rowCount-1))
+	{
+		if(true == chkbox.checked)
+		{
+			chkbox.checked = false;
+		}
+	}
+	else
+	{
+		chkbox.checked = true;
+	}
+	document.getElementById("txt_no_of_sel_chq").value = sel_cnt;
+	document.getElementById("txt_tot_amt_sel_chq").value = " "+tot_amt;
+}
+function toggle_out_clearing(source)
+{
+  	var table = document.getElementById("tab_out_chq");
+	var rowCount = table.rows.length;
+
+	for(var i=1; i<rowCount; i++)
+	{
+		var row = table.rows[i];
+		//alert("row :"+row);
+		var chkbox = row.cells[2].childNodes[0];
+		//alert("chkbox :"+chkbox.checked);
+		chkbox.checked = source.checked;
+
+		//document.getElementById("txt_no_of_sel_chq").value = document.getElementById("txt_tot_no_of_chq").value ;
+		//document.getElementById("txt_tot_amt_sel_chq").value = document.getElementById("txt_tot_amt").value ;
+
+		if(chkbox.checked == true)
+		{
+			//document.getElementById("txt_no_of_sel_chq").value ='0';
+			//document.getElementById("txt_tot_amt_sel_chq").value = '0';
+			document.getElementById("txt_no_of_sel_chq").value =document.getElementById("txt_tot_no_of_chq").value;
+			document.getElementById("txt_tot_amt_sel_chq").value =" "+document.getElementById("txt_tot_amt").value;
+		}
+		else
+		{
+			document.getElementById("txt_no_of_sel_chq").value ='0';
+			document.getElementById("txt_tot_amt_sel_chq").value = '0';
+		}
+	}
+
+}
+
+function fetch_ChqStatus(chqDtl)
+{
+	document.getElementById("waiting").style.display=' ';
+	var baseurl=document.URL;
+	var p=baseurl.lastIndexOf('/');
+	baseurl=baseurl.substr(0,p+1);
+	baseurl=baseurl+"jsp/fetch_cbs_status.jsp?chqDtl="+chqDtl;
+	//location.replace(baseurl);
+	cts_ajax_getCbsStatus(baseurl)
+
+}//end fetch_ChqStatus
+function cts_ajax_getCbsStatus(baseurl)
+{
+		//alert ("Retriving Data");
+	if (window.XMLHttpRequest)
+	{
+		req = new XMLHttpRequest();
+		req.onreadystatechange = cts_process_getCbsStatus;
+		req.open("GET", url, true);
+		req.send(null);
+	}
+	// branch for IE/Windows ActiveX version
+	else if (window.ActiveXObject)
+	{
+		req = new ActiveXObject("Microsoft.XMLHTTP");
+		if (req)
+		{
+			req.onreadystatechange=cts_process_getCbsStatus;
+			req.open("GET", url, true);
+			req.send(null);
+		}
+	}
+}//end cts_ajax_getCbsStatus
+function cts_process_getCbsStatus()
+{
+	if(req.readyState == 4)
+	{
+		if(req.status == 200)
+		{
+			var res = req.responseText;
+			//alert('res:'+res);
+			document.getElementById('txtChqStatus').value=res;
+		}
+		else
+		{
+			alert("Problem In Retrieving Data.Please Check The Server Connection.");
+			document.getElementById("waiting").style.display='none';
+		}
+	}
+}//cts_process_getCbsStatus
+
+function fetch_cbsFileData(chqDtl,color,amt)
+{
+	selectedColor=color;
+	var session_branch_code = document.getElementById("session_branch_code").value;
+	if(session_branch_code=='null')
+	{
+		alert("Your Session Has Been Expired. Please Login Again.");
+		//var baseurl=baseurl+"login.jsp?flag=1";
+		//location.replace(baseurl);
+		menuOnClick("login.jsp");
+	}
+	else
+	{
+		var baseurl=document.URL;
+		var p=baseurl.lastIndexOf('/');
+		baseurl=baseurl.substr(0,p+1);
+		//alert(amt);
+		baseurl=baseurl+"jsp/fetch_cbs_file_Data.jsp?chqDtl="+chqDtl+"&amt="+amt*100;
+		//location.replace(baseurl);
+		cts_ajax_getCbsData(baseurl)
+	}
+}
+function cts_ajax_getCbsData(url)
+{
+	//alert ("Retriving Data");
+	if (window.XMLHttpRequest)
+	{
+		req = new XMLHttpRequest();
+		req.onreadystatechange = cts_process_getCbsData;
+		req.open("GET", url, true);
+		req.send(null);
+	}
+	// branch for IE/Windows ActiveX version
+	else if (window.ActiveXObject)
+	{
+		req = new ActiveXObject("Microsoft.XMLHTTP");
+		if (req)
+		{
+			req.onreadystatechange=cts_process_getCbsData;
+			req.open("GET", url, true);
+			req.send(null);
+		}
+	}
+}
+function cts_process_getCbsData()
+{
+  	if(req.readyState == 4)
+	{
+		if(req.status == 200)
+		{
+			var res = req.responseText;
+			record=res;
+			//alert("record:"+record);
+			//show_inward_filenames(res);
+			add_rows_for_cbsData(record);
+			//fetch_imageNameFromCheque(chqDtl);
+		}
+		else
+		{
+			alert("Problem In Retrieving Data.Please Check The Server Connection.");
+			document.getElementById("waiting").style.display='none';
+		}
+	}
+}
+function add_rows_for_cbsData(record)
+{
+	//alert('add_rows_for_cbsData:'+record);
+	/*<td>Cheque No</td>
+	<td>BODF</td>
+	<td>Sort Code</td>
+	<td>Tran Code</td>
+	<td>Amount</td>
+	<td>Account Number</td>
+	<td>Payee Name</td>
+	CLO_CHQNO,
+	CLO_BOFD,
+	CLO_SORTCD,
+	CLO_TRANCD,
+	CLO_AMOUNT,
+	CLO_PAYEE_ACCNO,
+	CLO_PAYEE_ACCNM */
+		//document.getElementById("tab_co_cbs_data").deleteRow(1);
+		var selectCount=document.getElementById("hd_selectCnt").value;
+		//alert('selectCount:'+selectCount);
+		if(selectCount!=1)
+		{
+			document.getElementById("tab_co_cbs_data").deleteRow(1);
+			makeTable(record);
+		}
+		else
+		{
+			makeTable(record);
+		}
+				//alert(document.getElementById('hd_payeeNm').value);
+		var isRedBackground=document.getElementById("txt_hdnIsRedBackground").value;
+		var readBackgroundVal=document.getElementById("txt_hdnRedBackgroundVal").value;
+		//alert('isRedBackground:>>'+isRedBackground);
+		//alert('readBackgroundVal:>>'+readBackgroundVal);
+		if(isRedBackground=='YES')
+		{//1
+			//browswChqs(readBackgroundVal);
+			getImagePath();
+			showImages();
+		}//1
+		
+		//reset flag after finding the images for red background cheques.
+		document.getElementById("txt_hdnIsRedBackground").value="NO";
+
+}//add_rows_for_cbsData(record)
+function makeTable(record)
+{
+	//	alert(' start of make table '+record);
+/*		var bool="false";
+		alert('color111:'+selectedColor+"flg=="+bool);
+		//note: don't remove space from below string...
+		;
+		if(selectedColor.indexOf('##rgb(255, 0, 0)##')>-1)
+		{
+			//alert('in red area...........');
+			bool="false";
+			alert('color222:'+selectedColor+"flg=="+bool);
+		}
+		else
+		{
+			bool="true";
+			alert('color333:'+selectedColor+"flg=="+bool);
+		}*/
+		//alert('color111:'+selectedColor.indexOf('##rgb(255, 0, 0)##'));
+		var allArrData=record.split("#");
+	//	alert("=="+allArrData);
+		var table=document.getElementById("tab_co_cbs_data");
+		var row = table.insertRow(1);
+
+		var cell1 = row.insertCell(0);
+		//cell1.style.width="10%";
+		var element1 = document.createElement("input");
+		element1.type = "text";
+		element1.style.border="none";
+    	element1.style.background="transparent";
+		element1.name="dyna_txt_chqno";
+		element1.id="dyna_txt_chqno";
+		element1.value=allArrData[0];
+		element1.size="4";
+		if(selectedColor.indexOf('##rgb(255, 0, 0)##')!=0)
+		{
+			//alert("in if");
+			element1.setAttribute("readonly", "true");
+		}
+		
+		/*if(!flg)
+		{
+			//element1.setAttribute("readonly", "true");
+			element1.setAttribute("readonly", "false");	
+		}*/
+		cell1.appendChild(element1);
+
+		var cell2 = row.insertCell(1);
+		//cell2.style.width="10%";
+		var element2 = document.createElement("input");
+		element2.type = "text";
+		element2.style.border="none";
+    	element2.style.background="transparent";
+		element2.name="dyna_txt_bodf";
+		element2.id="dyna_txt_bodf";
+		element2.value=allArrData[1];
+		element2.size="6";
+		element2.setAttribute("readonly", "true");
+		/*if(!flg)
+		{
+			//element1.setAttribute("readonly", "true");
+			element2.setAttribute("readonly", "false");	
+		}*/
+		cell2.appendChild(element2);
+
+		var cell3 = row.insertCell(2);
+		//cell3.style.width="10%";
+		var element3 = document.createElement("input");
+		element3.type = "text";
+		element3.style.border="none";
+    	element3.style.background="transparent";
+		element3.name="dyna_txt_sortcd";
+		element3.id="dyna_txt_sortcd";
+		element3.value=allArrData[2];
+		element3.size="6";
+		if(selectedColor.indexOf('##rgb(255, 0, 0)##')!=0)
+		{
+			element3.setAttribute("readonly", "true");
+		}
+		/*if(!flg)
+		{
+			//element1.setAttribute("readonly", "true");
+			element3.setAttribute("readonly", "false");	
+		}*/
+		cell3.appendChild(element3);
+
+		var cell4 = row.insertCell(3);
+		//cell4.style.width="10%";
+		var element4 = document.createElement("input");
+		element4.type = "text";
+		element4.style.border="none";
+    	element4.style.background="transparent";
+		element4.name="dyna_txt_trCd";
+		element4.id="dyna_txt_trCd";
+		element4.value=allArrData[3];
+		element4.size="1";
+		if(selectedColor.indexOf('##rgb(255, 0, 0)##')!=0)
+		{
+			element4.setAttribute("readonly", "true");
+		}
+		/*if(!flg)
+		{
+			//element1.setAttribute("readonly", "true");
+			element4.setAttribute("readonly", "false");	
+		}*/
+		cell4.appendChild(element4);
+
+		var cell5 = row.insertCell(4);
+		//cell5.style.width="10%";
+		var element5 = document.createElement("input");
+		element5.type = "text";
+		element5.style.border="none";
+    	element5.style.background="transparent";
+		element5.name="dyna_txt_amt";
+		element5.id="dyna_txt_amt";
+		element5.value=(allArrData[4]*1/100).toFixed(2);
+		element5.size="6";
+		element5.setAttribute("readonly", "true");
+		/*if(!flg)
+		{
+			//element1.setAttribute("readonly", "true");
+			element5.setAttribute("readonly", "false");	
+		}*/
+		cell5.appendChild(element5);
+
+		var cell6 = row.insertCell(5);
+		//cell6.style.width="10%";
+		var element6 = document.createElement("input");
+		element6.type = "text";
+		element6.style.border="none";
+    	element6.style.background="transparent";
+		element6.name="dyna_txt_accNo";
+		element6.id="dyna_txt_accNo";
+
+		element6.value=allArrData[5];
+		element6.size="10";
+		if(selectedColor.indexOf('##rgb(255, 0, 0)##')!=0)
+		{
+			element6.setAttribute("readonly", "true");
+		}
+		/*if(!flg)
+		{
+			//element1.setAttribute("readonly", "true");
+			element6.setAttribute("readonly", "false");	
+		}*/
+		cell6.appendChild(element6);
+
+		var cell7 = row.insertCell(6);
+		//cell7.style.width="10%";
+		var element7 = document.createElement("input");
+		element7.type = "text";
+		element7.style.border="none";
+    	element7.style.background="transparent";
+		element7.name="dyna_txt_payeeNm";
+		element7.id="dyna_txt_payeeNm";
+		element7.value=allArrData[6];
+		element7.size="11";
+		/*if(selectedColor.indexOf('##rgb(255, 0, 0)##')!=0)
+		{
+			element7.setAttribute("readonly", "true");
+		}*/
+		cell7.appendChild(element7);
+		
+		
+		/*if(!flg)
+		{
+			//element1.setAttribute("readonly", "true");
+			element7.setAttribute("readonly", "false");	
+		}*/
+		
+		
+
+		var cell8 = row.insertCell(7);
+		//cell8.style.width="10%";
+		var element8 = document.createElement("input");
+		element8.type = "text";
+		element8.style.border="none";
+    	element8.style.background="transparent";
+		element8.name="dyna_txt_clearingType";
+		element8.id="dyna_txt_clearingType";
+		element8.value=allArrData[7];
+		element8.size="1";
+		if(selectedColor.indexOf('##rgb(255, 0, 0)##')!=0)
+		{
+			element8.setAttribute("readonly", "true");
+		}
+		cell8.appendChild(element8);
+		
+		var cell9 = row.insertCell(8);
+		var element17 = document.createElement("input");
+		element17.id="txt_ptof"
+		element17.name="txt_ptof"
+		element17.type = "text";
+		element17.value=allArrData[8];	
+		element17.size="1";
+		cell9.appendChild(element17);
+		
+		var element8 = document.createElement("input");
+		element8.id="hd_chqInfo"
+		element8.name="hd_chqInfo"
+		element8.type = "hidden";
+		element8.value=allArrData[0];
+		cell7.appendChild(element8);
+
+		var element9 = document.createElement("input");
+		element9.id="hd_bodf"
+		element9.name="hd_bodf"
+		element9.type = "hidden";
+		element9.value=allArrData[1];
+		cell7.appendChild(element9);
+
+		var element10 = document.createElement("input");
+		element10.id="hd_sortCd"
+		element10.name="hd_sortCd"
+		element10.type = "hidden";
+		element10.value=allArrData[2];
+		cell7.appendChild(element10);
+
+		var element11 = document.createElement("input");
+		element11.id="hd_TrCd"
+		element11.name="hd_TrCd"
+		element11.type = "hidden";
+		element11.value=allArrData[3];
+		cell7.appendChild(element11);
+
+		var element12 = document.createElement("input");
+		element12.id="hd_amt"
+		element12.name="hd_amt"
+		element12.type = "hidden";
+		element12.value=allArrData[4];
+		cell7.appendChild(element12);
+
+		var element13 = document.createElement("input");
+		element13.id="hd_accNo"
+		element13.name="hd_accNo"
+		element13.type = "hidden";
+		element13.value=allArrData[5];
+		cell7.appendChild(element13);
+
+		var element14 = document.createElement("input");
+		element14.id="hd_payeeNm"
+		element14.name="hd_payeeNm"
+		element14.type = "hidden";
+		element14.value=allArrData[6];
+		cell7.appendChild(element14);
+
+		var element15 = document.createElement("input");
+		element15.id="hd_clearingType"
+		element15.name="hd_clearingType"
+		element15.type = "hidden";
+		element15.value=allArrData[7];		
+		cell7.appendChild(element15);
+		
+		
+		var element16 = document.createElement("input");
+		element16.id="hd_ptof"
+		element16.name="hd_ptof"
+		element16.type = "hidden";
+		element16.value=allArrData[8];		
+		cell7.appendChild(element16);
+		//alert(' end of make table ');
+}
+
+function showGrid(dataobj)
+{
+	//alert('>'+dataobj);
+	document.getElementById("popupDiv").style.display='';
+	var datartr = JSON.parse(dataobj);
+	//alert('>>>'+datartr.data);
+	myGrid = new dhtmlXGridObject('redDatagrid');
+	myGrid.setImagePath("codebase/imgs/");
+	myGrid.setHeader("CHQNO,SORT CODE,TRAN CODE,DRAWEE ACCNO,BOFD,AMOUNT(In Rs.),P2F,PAYEE NAME,CLO_ITEMSEQNO,amount"
+			       ,["text-align:center; font-weight:bold",
+			        "text-align:center; font-weight:bold",
+					"text-align:center; font-weight:bold",
+					"text-align:center; font-weight:bold",
+					"text-align:center; font-weight:bold",
+					"text-align:center; font-weight:bold",
+					"text-align:center; font-weight:bold",
+					"text-align:center; font-weight:bold",
+					"text-align:center; font-weight:bold"]);
+	myGrid.setColumnIds("CLO_CHQNO,CLO_SORTCD,CLO_TRANCD,CLO_DRAWEE_ACCNO,CLO_BOFD,CLO_AMOUNT,CLO_PPRTOFOLLOW,CLO_PAYEE_ACCNM,CLO_ITEMSEQNO,CLO_AMOUNT");
+	myGrid.setInitWidths("80,80,40,90,80,80,40,180,0,0");
+	myGrid.setColAlign("left,left,left,left,left,left,left,left,left,left");
+	myGrid.setColTypes("ed,ed,ed,ed,ro,ro,ed,ed,ro,ro");
+	myGrid.setColSorting("str,str,str,str,str,str,str,str,str");
+	myGrid.enableEditEvents(true,false,true);
+	myGrid.init();
+	myGrid.parse(datartr.data, "js");
+	//myGrid.attachEvent("onRowSelect", onRowSelect);
+	myGrid.attachEvent("onEditCell",function(stage,rowId,colInd){
+		if (stage==1 && this.editor && this.editor.obj){
+		this.editor.obj.select();
+		}
+		return true
+		})
+		
+		
+		myGrid.forEachRow(function(id)
+				{
+					myGrid.setRowTextStyle(id,"border-color:#a4bed4;");
+					if (myGrid.cellById(id,5).getValue().length >0)
+					 {
+						var am=Number(myGrid.cellById(id,5).getValue());
+						 myGrid.cellById(id,5).setValue(((am*1)/100).toFixed(2))
+					 }
+					 
+					
+				 });
+}
+/*function onRowSelect(id,ind)
+{
+	selectedIndex=myGrid.getRowIndex(myGrid.getSelectedRowId());
+	var singleChqNo=nonUpdatedImgs.split("~");
+	var chqNo=singleChqNo[selectedIndex].split("#");
+	document.getElementById('img_frnt').src = imagePath+chqNo[2];
+	enlargeCheque_outwardchqs('img_frnt');
+}*/
+function showGridMICR(dataobj)
+{
+	//alert('>'+dataobj);
+	document.getElementById("popupDiv").style.display='';
+	var datartr = JSON.parse(dataobj);
+	//alert('>>>'+datartr.data);
+	myGrid1 = new dhtmlXGridObject('redMicrgrid');
+	myGrid1.setImagePath("codebase/imgs/");
+	myGrid1.setHeader("CHQNO,SORT CODE,TRAN CODE,DRAWEE ACCNO,FILE NAME,ITEMSEQ NO "
+			       ,["text-align:center; font-weight:bold",
+			        "text-align:center; font-weight:bold",
+					"text-align:center; font-weight:bold",
+					"text-align:center; font-weight:bold",
+					"text-align:center; font-weight:bold",
+					"text-align:center; font-weight:bold"
+					]);
+	myGrid1.setColumnIds("CHEQUENO,SORTCODE,TRANCODE,ACCNO,FILENAME,ITEMSEQNO");
+	myGrid1.setInitWidths("80,80,50,80,0,0");
+	myGrid1.setColAlign("left,left,left,left,left,left");
+	myGrid1.setColTypes("ed,ed,ed,ed,ro,ro");
+	myGrid1.setColSorting("str,str,str,str,str,str");
+	myGrid1.enableEditEvents(true,false,true);
+	myGrid1.init();
+	myGrid1.parse(datartr.data, "js");
+	myGrid1.attachEvent("onRowSelect", onRowSelect1);
+	myGrid1.attachEvent("onEditCell",function(stage,rowId,colInd){
+		if (stage==1 && this.editor && this.editor.obj){
+		this.editor.obj.select();
+		}
+		return true
+		})
+}
+function onRowSelect1(id,ind)
+{
+	selectedIndex=myGrid1.getRowIndex(myGrid1.getSelectedRowId());
+	var singleChqNo=nonUpdatedImgs.split("~");
+	var chqNo=singleChqNo[selectedIndex].split("#");
+	document.getElementById('img_frnt').src = imagePath+chqNo[2];
+	enlargeCheque_outwardchqs('img_frnt');
+}
+function showGridDUPCHEQ(dataobj)
+{
+	//alert('>'+dataobj);
+	document.getElementById("popupDiv1").style.display='';
+	var datartr = JSON.parse(dataobj);
+	//alert('>>>'+datartr.data);
+	myGrid2 = new dhtmlXGridObject('readDupdata');
+	myGrid2.setImagePath("codebase/imgs/");
+	myGrid2.setHeader("CHQNO,SORT CODE,TRAN CODE,DRAWEE ACCNO,AMOUNT,PAYEE NAME,SELECT,OLBC "
+			       ,["text-align:center; font-weight:bold",
+			        "text-align:center; font-weight:bold",
+					"text-align:center; font-weight:bold",
+					"text-align:center; font-weight:bold",
+					"text-align:center; font-weight:bold",
+					"text-align:center; font-weight:bold",
+					"text-align:center; font-weight:bold",
+					"text-align:center; font-weight:bold"
+					]);
+	myGrid2.setColumnIds("CLO_CHQNO,CLO_SORTCD,CLO_TRANCD,CLO_DRAWEE_ACCNO,CLO_AMOUNT,CLO_PAYEE_ACCNM,SELECT,CLO_OLBC");
+	myGrid2.setInitWidths("80,80,50,100,100,100,60,0");
+	myGrid2.setColAlign("left,left,left,left,left,left");
+	myGrid2.setColTypes("ro,ro,ro,ro,ro,ro,ra,ro");
+	myGrid2.setColSorting("str,str,str,str,str,str,str,str");
+	myGrid2.init();
+	myGrid2.parse(datartr.data, "js");
+	myGrid2.attachEvent("onCheck", onCheck);
+
+}
+/*grid.attachEvent("onCheckbox",function(id,index,mode){
+	// code here will be called each time when radio or checkbox clicked in grid
+	});*/
+function onCheck(id,ind,mode)
+{
+	
+	//selectedIndex=myGrid2.getRowIndex(myGrid2.getSelectedRowId());
+	selectedIndex1=myGrid2.getCheckedRows(ind);
+	var singleChqNo=imagenmstr.split("$")[selectedIndex1];
+	//alert(singleChqNo+"=="+imagenmstr+'=='+selectedIndex1+"=="+singleChqNo);
+	document.getElementById('img_popup1').src = imagePath+"F"+singleChqNo+"G.jpg";
+	enlargeCheque_outwardchqs('img_popup1');
+}
+function nextButnClicked1()
+{
+	var singleChqNo=imagenmstr.split("$")[selectedIndex1];
+	if(selectedIndex1<imagenmstr.split("$").length)
+	{
+		
+		selectedIndex1++;
+		
+		if(selectedIndex1>(imagenmstr.split("$").length*1)-2)
+		{
+			document.getElementById("btNext1").disabled=true;
+		}
+		showImages1();
+	}
+	else
+	{
+		document.getElementById("btNext1").disabled=true;
+	}
+}
+
+function showImages1()
+{
+	
+	
+	
+	if(imagenmstr.indexOf("$")>-1)
+	{
+		var singleChqNo=imagenmstr.split("$")[selectedIndex1];
+		document.getElementById('img_popup1').src = imagePath+"F"+singleChqNo+"G.jpg";
+				
+		enlargeCheque_outwardchqs('img_popup1');
+		if(selectedIndex1>=(imagenmstr.split("$").length*1)-2)
+		{
+			document.getElementById("btNext1").disabled=true;
+		}
+		else
+		{
+			document.getElementById("btNext1").disabled=false;
+		}
+		if(selectedIndex1<=0)
+		{
+			//document.getElementById("btBack1").disabled=true;
+		}
+		else
+		{
+			document.getElementById("btBack1").disabled=false;
+		}
+	}
+}
+
+function backButnClicked1()
+{
+
+	if(selectedIndex1>0)
+	{
+		
+		selectedIndex1--;
+		showImages1();
+		if(selectedIndex1<=0)
+		{
+			document.getElementById("btBack1").disabled=true;
+		}
+	}
+	else
+	{
+		document.getElementById("btBack1").disabled=true;
+	}
+}
+
+function updateAllCheques()
+{
+	//alert(1111);
+	var count=0;
+	
+	var dataArr = [];
+	var dataArr1 = [];
+	var flg=true;
+	myGrid.forEachRow(function(id) 
+	{
+		
+		if(myGrid.cells(id,0).getValue().length==6)
+		{
+			if(myGrid.cells(id,1).getValue().length==9)
+			{
+				if(myGrid.cells(id,2).getValue().length== 2 || myGrid.cells(id,2).getValue().length==3)//change by SAM <4 logic
+				{
+					if(myGrid.cells(id,3).getValue().length==7 || myGrid.cells(id,3).getValue().length==6 )//change by SAM <4 logic
+					{
+						if(myGrid.cells(id,7).getValue().length<=25)
+						{
+							
+							dataArr.push({	
+								CLO_CHQNO: myGrid.cells(id,0).getValue(),     
+								CLO_SORTCD: myGrid.cells(id,1).getValue(),
+								CLO_TRANCD: myGrid.cells(id,2).getValue(),
+								CLO_DRAWEE_ACCNO: myGrid.cells(id,3).getValue(),
+								CLO_PPRTOFOLLOW: myGrid.cells(id,6).getValue(),
+								CLO_PAYEE_ACCNM:myGrid.cells(id,7).getValue(),
+								CLO_ITEMSEQNO: myGrid.cells(id,8).getValue()
+								
+							});
+						count++;
+					
+						}
+						//////////////////////////
+					else{
+						alert("Payee Name Must Be Less Than 25 Character");
+						flg=false;
+						myGrid.selectCell(id-1,7,false,true,true);
+						return;
+						
+					}
+				}
+				else
+				{
+						alert("Account Number Should Be 6 or 7 Digits");
+						flg=false;
+						myGrid.selectCell(id-1,3,false,true,true);
+						return;
+						
+					}
+				}
+				else
+				{
+					//alert("Transaction Code Should Be 3 Digits");
+					alert('Transaction Code must be 2 or 3 digit.');
+					flg=false;
+					myGrid.selectCell(id-1,2,false,true,true);
+					return;
+				}
+			}
+			else
+			{
+				alert("MICR Code Should Be 9 Digits");
+				flg=false;
+				myGrid.selectCell(id-1,1,false,true,true);
+				return;
+			}
+		}
+		else
+		{
+			alert("Cheque Number Should Be 6 Digits");
+			flg=false;
+			myGrid.selectCell(id-1,0,false,true,true);
+			return;
+		}
+	});
+	var ids = myGrid1.getChangedRows().split(",");
+	//var i=0;
+	//alert('ids=='+ids+'====='+ids.length);
+	if(ids!='')
+	{
+		for (var i=0; i<ids.length; i++)
+		{
+			if(myGrid1.cells(ids[i],0).getValue().length==6)
+			{
+				if(myGrid1.cells(ids[i],1).getValue().length==9)
+				{
+					//if(myGrid1.cells(ids[i],2).getValue().length==3) //by sam change
+					if(myGrid1.cells(ids[i],2).getValue().length== 2 || myGrid1.cells(ids[i],2).getValue().length==3)
+					{
+						//alert("myGrid1.cells(ids[i],3).getValue().length="+myGrid1.cells(ids[i],3).getValue().length);
+						if(myGrid1.cells(ids[i],3).getValue().length==7 || myGrid1.cells(ids[i],3).getValue().length==6)
+						{
+							dataArr1.push({	
+								CLO_CHQNO: myGrid1.cells(ids[i],0).getValue(),
+								CLO_SORTCD: myGrid1.cells(ids[i],1).getValue(),
+								CLO_TRANCD: myGrid1.cells(ids[i],2).getValue(),
+								CLO_DRAWEE_ACCNO: myGrid1.cells(ids[i],3).getValue(),
+								File_Name: myGrid1.cells(ids[i],4).getValue(),
+								ItemSeqNo: myGrid1.cells(ids[i],5).getValue()
+								
+							});
+							//alert(dataArr1+"==dataArr1");
+						}
+						else
+						{
+							alert("Account Number Should Be 6 or 7 Digits");
+							flg=false;
+							myGrid1.selectCell(ids[i-1],3,false,false,true);
+							break;
+						}
+					}
+					else
+					{
+						alert("Transaction Code Should Be 2 or 3 Digits");
+						flg=false;
+						myGrid1.selectCell(ids[i-1],2,false,true,true);
+						break;
+					}
+				}
+				else
+				{
+					alert("MICR Code Should Be 9 Digits");
+					flg=false;
+					myGrid1.selectCell(ids[i-1],1,false,true,true);
+					break;
+				}
+			}
+			else
+			{
+				alert("Cheque Number Should Be 6 Digits");
+				flg=false;
+				myGrid1.selectCell(ids[i-1],0,false,true,true);
+				break;
+			}
+			//i++;
+		}
+	}
+	//alert('dataArr1==='+dataArr1);
+	if(flg==true)
+	{	
+	
+		//location.replace("jsp/updatePopupRecords.jsp?jsonString="+JSON.stringify(dataArr)+"&micrData="+JSON.stringify(dataArr1));
+		document.getElementById("jsonString").value=JSON.stringify(dataArr);
+		document.getElementById("micrData").value=JSON.stringify(dataArr1);
+		document.getElementById("formid").action="jsp/updatePopupRecords.jsp";
+		document.getElementById("waiting").style.display='none';
+		document.getElementById("formid").submit();
+	}
+}
+function updateDupCheques()
+{	
+	var count=0;
+	var dataArr = [];
+	
+	myGrid2.forEachRow(function(id)
+	{ 
+		if (myGrid2.cellById(id,6).isChecked())
+		{
+			var imagenm=document.getElementById("img_popup1").src;
+			imagenm=imagenm.substring(imagenm.lastIndexOf("/")+1);
+						
+			dataArr.push({	
+				
+				CLO_OLBC: myGrid2.cells(id,7).getValue(),
+				IMAGENM:imagenm
+				
+			});
+			count++;
+							
+		}
+	
+	});
+	if(count>0)
+	{
+		var url_path="jsp/updateDupChequeData.jsp?updata="+JSON.stringify(dataArr);
+		var baseurl=document.URL;
+		var p=baseurl.lastIndexOf('/');
+		baseurl=baseurl.substr(0,p+1);
+		baseurl=baseurl+url_path;
+		document.getElementById("waiting").style.display='';
+		cts_ajax_updateDupData(encodeURI(baseurl));
+	}
+}
+
+function cts_ajax_updateDupData(url)
+{
+	//alert ("Retriving Data");
+	if (window.XMLHttpRequest)
+	{
+		req = new XMLHttpRequest();
+		req.onreadystatechange = cts_process_response;
+		req.open("GET", url, true);
+		req.send(null);
+	}
+	// branch for IE/Windows ActiveX version
+	else if (window.ActiveXObject)
+	{
+		req = new ActiveXObject("Microsoft.XMLHTTP");
+		if (req)
+		{
+			req.onreadystatechange=cts_process_response;
+			req.open("GET", url, true);
+			req.send(null);
+		}
+	}
+}
+function cts_process_response()
+{
+  	if(req.readyState == 4)
+	{
+		if(req.status == 200)
+		{
+			var res = req.responseText;
+			document.getElementById("waiting").style.display='none';
+			alert(res.trim());
+			//record=res;
+			
+		}
+		else
+		{
+			alert("Problem In Retrieving Data.Please Check The Server Connection.");
+			document.getElementById("waiting").style.display='none';
+		}
+	}
+}
+function lPad( str,  noOfChars,  padChar) {// 2
+		var retVal = "";
+			for ( i = 0; i < (noOfChars - str.length); i++) {// 4
+				retVal = retVal + padChar;
+			}// 4
+			
+			retVal = retVal + str;
+			
+		return retVal;
+	}
+	
+	
+function uploadFiles()
+{	
+	//.getElementById("Nopickfile").style.display = 'none';
+	//document.getElementById("yespickfile").style.display = '';
+	var session_loginid = document.getElementById("session_loginid").value;
+	if(session_loginid == "null")
+	{
+
+		alert("Your Session Has Been Expired. Please Login Again.");
+		menuOnClick("login.jsp");
+	}
+	else
+	{		
+		var totfile="";
+		var inp = document.getElementById('file_pick');
+		for (var i = 0; i < inp.files.length; ++i)
+		{
+		  var name = inp.files.item(i).name;			
+		  totfile=name+"#"+totfile;
+		}		
+	//alert("totfile=="+totfile);
+		$("#filenames").val(totfile);
+		$("#retstr").val("OutwardClearing");
+		if(document.getElementById("file_pick").value=="")
+		{
+			alert('Please Select File.');
+			return false;
+		}
+		else
+		{
+			alert('going for upload.....');
+			document.getElementById("waiting").style.display='';
+			document.getElementById("formid").action="OutwardClearing_Upload";
+			document.getElementById("formid").method="POST";
+			document.getElementById("formid").enctype="multipart/form-data";
+			document.getElementById("formid").submit();
+		}
+ }
+}

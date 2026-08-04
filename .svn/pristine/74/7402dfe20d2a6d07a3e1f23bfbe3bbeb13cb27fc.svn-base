@@ -1,0 +1,876 @@
+<?xml version="1.0" encoding="UTF-8"  ?>
+<!-- Created with iReport - A designer for JasperReports -->
+<!DOCTYPE jasperReport PUBLIC "//JasperReports//DTD Report Design//EN" "http://jasperreports.sourceforge.net/dtds/jasperreport.dtd">
+<jasperReport
+		 name="report_clearing_inward_CTS_NonCTS"
+		 columnCount="1"
+		 printOrder="Vertical"
+		 orientation="Portrait"
+		 pageWidth="595"
+		 pageHeight="842"
+		 columnWidth="535"
+		 columnSpacing="0"
+		 leftMargin="30"
+		 rightMargin="30"
+		 topMargin="20"
+		 bottomMargin="20"
+		 whenNoDataType="NoPages"
+		 isTitleNewPage="false"
+		 isSummaryNewPage="false">
+	<property name="ireport.scriptlethandling" value="0" />
+	<property name="ireport.encoding" value="UTF-8" />
+	<import value="java.util.*" />
+	<import value="net.sf.jasperreports.engine.*" />
+	<import value="net.sf.jasperreports.engine.data.*" />
+
+	<parameter name="dateString" isForPrompting="true" class="java.lang.String">
+		<defaultValueExpression ><![CDATA["01012014"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="branchString" isForPrompting="true" class="java.lang.String">
+		<defaultValueExpression ><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="bankName" isForPrompting="true" class="java.lang.String">
+		<defaultValueExpression ><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="clearingType" isForPrompting="true" class="java.lang.String">
+		<defaultValueExpression ><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<queryString><![CDATA[SELECT
+     CLEARINGINWARD."CLI_PAYORBANKROUTNO" AS CLEARINGINWARD_CLI_PAYORBANKRO,
+     CLEARINGINWARD."CLI_AMOUNT" AS CLEARINGINWARD_CLI_AMOUNT,
+     CLEARINGINWARD."CLI_SERIALNO" AS CLEARINGINWARD_CLI_SERIALNO,
+     CLEARINGINWARD."CLI_TRANSCODE" AS CLEARINGINWARD_CLI_TRANSCODE,
+     CLEARINGINWARD."CLI_ACCOUNTNO" AS CLEARINGINWARD_CLI_ACCOUNTNO,
+     CLEARINGINWARD."CLI_BOFDROUTNO" AS CLEARINGINWARD_CLI_BOFDROUTNO,
+     substr(CLEARINGINWARD."CLI_XMLFILENAME",1,26) AS CLEARINGINWARD_CLI_XMLFILENAME,
+     BRANCHMSTR."BRM_MICRCD" AS BRANCHMSTR_BRM_MICRCD,
+     --BRANCHMSTR."BRM_BRNCD" AS BRANCHMSTR_BRM_BRNCD,
+     --BRANCHMSTR."BRM_BRNCD"||'--'||BRANCHMSTR."BRM_BRNNM" AS BRN_CD_BRN_NAME
+     nvl(BRANCHMSTR."BRM_BRNCD",'-1') AS BRANCHMSTR_BRM_BRNCD,
+     nvl(BRANCHMSTR."BRM_BRNCD",'-1')||'--'||nvl(BRANCHMSTR."BRM_BRNNM",'Not Drawn on Us') AS BRN_CD_BRN_NAME,
+  decode(nvl(RETRUNOUTWARD."RTO_RETURNREASONCODE",'NA'),'NA','ACCEPTED',RETINWRETCODES."RETDESCR")AS RETURN_STATUS,
+CLEARINGINWARD."CLI_CPPSFLAG" AS CLEARINGINWARD_CLI_CPPSFLAG,
+(select count(*) from CLEARINGINWARD where CLEARINGINWARD.CLI_CPPSFLAG='P' and CLEARINGINWARD."CLI_DDMMYYYY"=$P{dateString} AND
+  nvl(BRANCHMSTR."BRM_BRNCD",'-1')=DECODE($P{branchString},'ALL',BRM_BRNCD,'-1','-1',$P{branchString})
+AND 
+  CLEARINGINWARD."CLI_CLEARINGTYPE"=$P{clearingType}) as pflag,
+ (select count(*) from CLEARINGINWARD where CLEARINGINWARD.CLI_CPPSFLAG='D' and CLEARINGINWARD."CLI_DDMMYYYY"=$P{dateString} AND
+  nvl(BRANCHMSTR."BRM_BRNCD",'-1')=DECODE($P{branchString},'ALL',BRM_BRNCD,'-1','-1',$P{branchString})
+AND 
+  CLEARINGINWARD."CLI_CLEARINGTYPE"=$P{clearingType}) as dflag,
+ (select count(*) from CLEARINGINWARD where CLEARINGINWARD.CLI_CPPSFLAG='Y' and CLEARINGINWARD."CLI_DDMMYYYY"=$P{dateString} AND
+  nvl(BRANCHMSTR."BRM_BRNCD",'-1')=DECODE($P{branchString},'ALL',BRM_BRNCD,'-1','-1',$P{branchString})
+AND 
+  CLEARINGINWARD."CLI_CLEARINGTYPE"=$P{clearingType}) as yflag,
+ (select count(*) from CLEARINGINWARD where CLEARINGINWARD.CLI_CPPSFLAG='Z' and CLEARINGINWARD."CLI_DDMMYYYY"=$P{dateString} AND
+  nvl(BRANCHMSTR."BRM_BRNCD",'-1')=DECODE($P{branchString},'ALL',BRM_BRNCD,'-1','-1',$P{branchString})
+AND 
+  CLEARINGINWARD."CLI_CLEARINGTYPE"=$P{clearingType}) as zflag,
+ (select count(*) from CLEARINGINWARD where CLEARINGINWARD.CLI_CPPSFLAG='N' and CLEARINGINWARD."CLI_DDMMYYYY"=$P{dateString} AND
+  nvl(BRANCHMSTR."BRM_BRNCD",'-1')=DECODE($P{branchString},'ALL',BRM_BRNCD,'-1','-1',$P{branchString})
+AND 
+  CLEARINGINWARD."CLI_CLEARINGTYPE"=$P{clearingType}) as nflag,
+(select count(*) from CLEARINGINWARD where CLEARINGINWARD."CLI_DDMMYYYY"=$P{dateString} AND
+  nvl(BRANCHMSTR."BRM_BRNCD",'-1')=DECODE($P{branchString},'ALL',BRM_BRNCD,'-1','-1',$P{branchString})
+AND 
+  CLEARINGINWARD."CLI_CLEARINGTYPE"=$P{clearingType}) as totalcnt
+
+FROM
+     "CLEARINGINWARD" CLEARINGINWARD left outer join
+     "BRANCHMSTR" BRANCHMSTR
+on
+    BRANCHMSTR."BRM_MICRCD"=CLEARINGINWARD."CLI_PAYORBANKROUTNO"
+ left outer join "RETRUNOUTWARD" RETRUNOUTWARD
+on  RETRUNOUTWARD."RTO_DDMMYYYY"  =CLEARINGINWARD."CLI_DDMMYYYY" and CLEARINGINWARD."CLI_CLRSRNO"=RETRUNOUTWARD."RTO_ITEMSEQUENCENO"
+ left outer join "RETINWRETCODES" RETINWRETCODES 
+ on  RETINWRETCODES."RETCODE"=RETRUNOUTWARD."RTO_RETURNREASONCODE"
+where
+   CLEARINGINWARD."CLI_DDMMYYYY"=$P{dateString}
+AND
+  nvl(BRANCHMSTR."BRM_BRNCD",'-1')=DECODE($P{branchString},'ALL',BRM_BRNCD,'-1','-1',$P{branchString})
+AND 
+  CLEARINGINWARD."CLI_CLEARINGTYPE"=$P{clearingType}
+order by
+CLEARINGINWARD_CLI_XMLFILENAME ASC,
+CLEARINGINWARD_CLI_PAYORBANKRO ASC]]></queryString>
+
+	<field name="CLEARINGINWARD_CLI_PAYORBANKRO" class="java.lang.String"/>
+	<field name="CLEARINGINWARD_CLI_AMOUNT" class="java.lang.String"/>
+	<field name="CLEARINGINWARD_CLI_SERIALNO" class="java.lang.String"/>
+	<field name="CLEARINGINWARD_CLI_TRANSCODE" class="java.lang.String"/>
+	<field name="CLEARINGINWARD_CLI_ACCOUNTNO" class="java.lang.String"/>
+	<field name="CLEARINGINWARD_CLI_BOFDROUTNO" class="java.lang.String"/>
+	<field name="CLEARINGINWARD_CLI_XMLFILENAME" class="java.lang.String"/>
+	<field name="BRANCHMSTR_BRM_MICRCD" class="java.lang.String"/>
+	<field name="BRANCHMSTR_BRM_BRNCD" class="java.math.BigDecimal"/>
+	<field name="BRN_CD_BRN_NAME" class="java.lang.String"/>
+	<field name="RETURN_STATUS" class="java.lang.String"/>
+	<field name="CLEARINGINWARD_CLI_CPPSFLAG" class="java.lang.String"/>
+	<field name="PFLAG" class="java.math.BigDecimal"/>
+	<field name="DFLAG" class="java.math.BigDecimal"/>
+	<field name="YFLAG" class="java.math.BigDecimal"/>
+	<field name="ZFLAG" class="java.math.BigDecimal"/>
+	<field name="NFLAG" class="java.math.BigDecimal"/>
+	<field name="TOTALCNT" class="java.math.BigDecimal"/>
+
+	<variable name="sessionNumber" class="java.lang.Integer" resetType="Report" incrementType="Group" incrementGroup="sessionGroup" calculation="Count">
+		<variableExpression><![CDATA[$V{sessionNumber}]]></variableExpression>
+		<initialValueExpression><![CDATA[new Integer(0)]]></initialValueExpression>
+	</variable>
+	<variable name="amount" class="java.lang.Double" resetType="None" calculation="Sum">
+		<variableExpression><![CDATA[new Double(Double.parseDouble($F{CLEARINGINWARD_CLI_AMOUNT})/100)]]></variableExpression>
+	</variable>
+	<variable name="sessionTotAmt" class="java.lang.Double" resetType="Group" resetGroup="sessionGroup" calculation="Sum">
+		<variableExpression><![CDATA[new Double(Double.parseDouble($F{CLEARINGINWARD_CLI_AMOUNT})/100)]]></variableExpression>
+	</variable>
+	<variable name="grandTotal" class="java.lang.Double" resetType="Report" calculation="Sum">
+		<variableExpression><![CDATA[new Double(Double.parseDouble($F{CLEARINGINWARD_CLI_AMOUNT})/100)]]></variableExpression>
+	</variable>
+	<variable name="srno" class="java.lang.Integer" resetType="Report" calculation="Nothing">
+		<variableExpression><![CDATA[new Integer($V{srno}.intValue() + 1)]]></variableExpression>
+		<initialValueExpression><![CDATA[new Integer(0)]]></initialValueExpression>
+	</variable>
+
+		<group  name="sessionGroup" >
+			<groupExpression><![CDATA[$F{CLEARINGINWARD_CLI_XMLFILENAME}]]></groupExpression>
+			<groupHeader>
+			<band height="100"  isSplitAllowed="true" >
+				<staticText>
+					<reportElement
+						x="0"
+						y="0"
+						width="140"
+						height="25"
+						key="staticText-14"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="12" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Session No:]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="false" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="140"
+						y="0"
+						width="395"
+						height="25"
+						key="textField"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.lang.Integer"><![CDATA[$V{sessionNumber}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement
+						x="0"
+						y="25"
+						width="140"
+						height="25"
+						key="staticText-15"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="12" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Branch Code:]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="30"
+						y="50"
+						width="50"
+						height="50"
+						key="staticText-16"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="12" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Cheque
+No
+]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="80"
+						y="50"
+						width="60"
+						height="50"
+						key="staticText-17"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="12" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Sort Code
+]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="287"
+						y="50"
+						width="81"
+						height="50"
+						key="staticText-18"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="12" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Drawee 
+A/c No
+]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="368"
+						y="50"
+						width="66"
+						height="50"
+						key="staticText-19"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="12" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Amount
+]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="140"
+						y="50"
+						width="60"
+						height="50"
+						key="staticText-20"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="12" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Trans Code
+]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="200"
+						y="50"
+						width="87"
+						height="50"
+						key="staticText-21"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="12" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[ Bank Of 
+First Deposit
+]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="false" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="140"
+						y="25"
+						width="395"
+						height="25"
+						key="textField-1"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$F{BRN_CD_BRN_NAME}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement
+						x="0"
+						y="50"
+						width="30"
+						height="50"
+						key="staticText-25"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="12" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Sr
+No.
+]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="434"
+						y="50"
+						width="66"
+						height="50"
+						key="staticText-26"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="12" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Return Status
+]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="500"
+						y="50"
+						width="35"
+						height="50"
+						key="staticText-27"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="12" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[CPPS Flag
+]]></text>
+				</staticText>
+			</band>
+			</groupHeader>
+			<groupFooter>
+			<band height="25"  isSplitAllowed="true" >
+				<textField isStretchWithOverflow="false" pattern="##0.00" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="378"
+						y="0"
+						width="157"
+						height="25"
+						key="textField"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.lang.Double"><![CDATA[$V{sessionTotAmt}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement
+						x="0"
+						y="0"
+						width="378"
+						height="25"
+						key="staticText-23"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font pdfFontName="Helvetica-Bold" size="12" isBold="true" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Session Wise Total Amount:]]></text>
+				</staticText>
+			</band>
+			</groupFooter>
+		</group>
+		<background>
+			<band height="0"  isSplitAllowed="true" >
+			</band>
+		</background>
+		<title>
+			<band height="50"  isSplitAllowed="false" >
+				<staticText>
+					<reportElement
+						x="0"
+						y="0"
+						width="535"
+						height="50"
+						key="staticText-1"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="18" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Clearing Inward]]></text>
+				</staticText>
+			</band>
+		</title>
+		<pageHeader>
+			<band height="79"  isSplitAllowed="true" >
+				<staticText>
+					<reportElement
+						x="0"
+						y="54"
+						width="425"
+						height="25"
+						key="staticText-4"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="12" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Date: ]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="false" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="0"
+						y="0"
+						width="535"
+						height="54"
+						key="textField"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="18"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$P{bankName}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="false" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="425"
+						y="54"
+						width="110"
+						height="25"
+						key="textField"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$P{dateString}]]></textFieldExpression>
+				</textField>
+			</band>
+		</pageHeader>
+		<columnHeader>
+			<band height="0"  isSplitAllowed="true" >
+			</band>
+		</columnHeader>
+		<detail>
+			<band height="20"  isSplitAllowed="true" >
+				<textField isStretchWithOverflow="false" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="30"
+						y="0"
+						width="50"
+						height="20"
+						key="textField-2"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$F{CLEARINGINWARD_CLI_SERIALNO}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="false" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="80"
+						y="0"
+						width="60"
+						height="20"
+						key="textField-3"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$F{CLEARINGINWARD_CLI_PAYORBANKRO}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="false" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="140"
+						y="0"
+						width="60"
+						height="20"
+						key="textField-4"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$F{CLEARINGINWARD_CLI_TRANSCODE}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="false" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="200"
+						y="0"
+						width="87"
+						height="20"
+						key="textField-5"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$F{CLEARINGINWARD_CLI_BOFDROUTNO}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="false" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="287"
+						y="0"
+						width="81"
+						height="20"
+						key="textField-6"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[Integer.parseInt($F{CLEARINGINWARD_CLI_ACCOUNTNO})==0?"-":$F{CLEARINGINWARD_CLI_ACCOUNTNO}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="false" pattern="##0.00" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="368"
+						y="0"
+						width="66"
+						height="20"
+						key="textField-7"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.lang.Double"><![CDATA[new Double(Double.parseDouble($F{CLEARINGINWARD_CLI_AMOUNT})/100)]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="false" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="0"
+						y="0"
+						width="30"
+						height="20"
+						key="textField"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.lang.Integer"><![CDATA[$V{srno}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="434"
+						y="0"
+						width="66"
+						height="20"
+						key="textField-8"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" leftPadding="2" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$F{RETURN_STATUS}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="500"
+						y="0"
+						width="35"
+						height="20"
+						key="textField-9"
+						stretchType="RelativeToTallestObject"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$F{CLEARINGINWARD_CLI_CPPSFLAG}]]></textFieldExpression>
+				</textField>
+			</band>
+		</detail>
+		<columnFooter>
+			<band height="0"  isSplitAllowed="true" >
+			</band>
+		</columnFooter>
+		<pageFooter>
+			<band height="18"  isSplitAllowed="true" >
+				<textField isStretchWithOverflow="true" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="0"
+						y="0"
+						width="535"
+						height="18"
+						key="textField"
+						stretchType="RelativeToTallestObject"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.Integer"><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+				</textField>
+			</band>
+		</pageFooter>
+		<lastPageFooter>
+			<band height="200"  isSplitAllowed="true" >
+				<staticText>
+					<reportElement
+						x="0"
+						y="30"
+						width="50"
+						height="20"
+						key="staticText-28"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font pdfFontName="Helvetica-Bold" isBold="true"/>
+					</textElement>
+				<text><![CDATA[PPS Flag]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="50"
+						y="30"
+						width="410"
+						height="20"
+						key="staticText-29"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font pdfFontName="Helvetica-Bold" size="10" isBold="true"/>
+					</textElement>
+				<text><![CDATA[Description]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="0"
+						y="80"
+						width="50"
+						height="30"
+						key="staticText-30"
+						positionType="Float"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<text><![CDATA[D]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="50"
+						y="80"
+						width="410"
+						height="30"
+						key="staticText-31"
+						positionType="Float"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" leftPadding="5" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font size="10"/>
+					</textElement>
+				<text><![CDATA[Duplicate instrument already presented. No mismatch in Cheque no, Drawee bank MICR and Amount]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="0"
+						y="110"
+						width="50"
+						height="20"
+						key="staticText-32"
+						positionType="Float"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<text><![CDATA[Y]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="50"
+						y="110"
+						width="410"
+						height="20"
+						key="staticText-33"
+						positionType="Float"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" leftPadding="5" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font size="10"/>
+					</textElement>
+				<text><![CDATA[Amount mismatch. Cheque number and Drawee bank MICR have matched]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="0"
+						y="130"
+						width="50"
+						height="30"
+						key="staticText-34"
+						positionType="Float"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<text><![CDATA[Z]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="50"
+						y="130"
+						width="410"
+						height="30"
+						key="staticText-35"
+						positionType="Float"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" leftPadding="5" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font size="10"/>
+					</textElement>
+				<text><![CDATA[Duplicate instrument already presented. Amount mismatch. Cheque no and Drawee bank MICR matched]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="0"
+						y="160"
+						width="50"
+						height="20"
+						key="staticText-36"
+						positionType="Float"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<text><![CDATA[N]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="50"
+						y="160"
+						width="410"
+						height="20"
+						key="staticText-37"
+						positionType="Float"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" leftPadding="5" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font size="10"/>
+					</textElement>
+				<text><![CDATA[Instrument not part of CPPS data]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="0"
+						y="50"
+						width="50"
+						height="30"
+						key="staticText-38"
+						positionType="Float"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<text><![CDATA[P]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="50"
+						y="50"
+						width="410"
+						height="30"
+						key="staticText-39"
+						positionType="Float"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" leftPadding="5" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font size="10"/>
+					</textElement>
+				<text><![CDATA[Instrument validated with CPPS. No mismatch in Cheque number, Drawee bank MICR and Amount]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="460"
+						y="30"
+						width="75"
+						height="20"
+						key="staticText-40"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font pdfFontName="Helvetica-Bold" isBold="true"/>
+					</textElement>
+				<text><![CDATA[Total Count]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="460"
+						y="50"
+						width="75"
+						height="30"
+						key="textField-10"
+						positionType="Float"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.math.BigDecimal"><![CDATA[$F{PFLAG}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="460"
+						y="80"
+						width="75"
+						height="30"
+						key="textField-11"
+						positionType="Float"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.math.BigDecimal"><![CDATA[$F{DFLAG}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="460"
+						y="110"
+						width="75"
+						height="20"
+						key="textField-12"
+						positionType="Float"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.math.BigDecimal"><![CDATA[$F{YFLAG}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="460"
+						y="130"
+						width="75"
+						height="30"
+						key="textField-13"
+						positionType="Float"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.math.BigDecimal"><![CDATA[$F{ZFLAG}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="460"
+						y="160"
+						width="75"
+						height="20"
+						key="textField-14"
+						positionType="Float"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.math.BigDecimal"><![CDATA[$F{NFLAG}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="460"
+						y="180"
+						width="75"
+						height="20"
+						key="textField-15"
+						positionType="Float"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.math.BigDecimal"><![CDATA[$F{TOTALCNT}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement
+						x="356"
+						y="180"
+						width="104"
+						height="20"
+						key="staticText-41"
+						positionType="Float"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font pdfFontName="Helvetica-Bold" isBold="true"/>
+					</textElement>
+				<text><![CDATA[Grand Total]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="0"
+						y="0"
+						width="378"
+						height="25"
+						key="staticText-42"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font pdfFontName="Helvetica-Bold" size="12" isBold="true" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Grand Total Amount:]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="false" pattern="##0.00" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="378"
+						y="0"
+						width="157"
+						height="25"
+						key="textField-16"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.lang.Double"><![CDATA[$V{grandTotal}]]></textFieldExpression>
+				</textField>
+			</band>
+		</lastPageFooter>
+		<summary>
+			<band height="0"  isSplitAllowed="true" >
+			</band>
+		</summary>
+</jasperReport>

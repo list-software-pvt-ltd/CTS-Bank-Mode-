@@ -1,0 +1,40 @@
+
+<html>
+<!--
+  Created using jsbin.com
+  Source can be edited via http://jsbin.com/aCEsOt/2/edit
+-->
+  <head>
+<script src="http://code.jquery.com/jquery.min.js"></script>
+<link href="http://getbootstrap.com/2.3.2/assets/css/bootstrap.css" rel="stylesheet" type="text/css" />
+<link href="http://getbootstrap.com/2.3.2/assets/css/bootstrap-responsive.css" rel="stylesheet" type="text/css" />
+<script src="http://getbootstrap.com/2.3.2/assets/js/bootstrap.js"></script>
+  
+<style id="jsbin-css">
+.upload{postion:relative;}
+input{position:absolute; left:0; opacity:0; z-index:9999;cursor:pointer;line-height:300;}
+</style>
+</head>
+  <body>
+    <div class="upload">
+      <a href="#" class="btn">Upload</a>
+      <input type="file" />
+    </div>
+  <script>
+
+</script>
+<script src="http://static.jsbin.com/js/render/edit.js"></script>
+<script>jsbinShowEdit({"root":"http://static.jsbin.com","csrf":"sCqQQb4OPPY+u6lWULUPMyL5"});</script>
+<script>
+var _gaq = _gaq || [];
+_gaq.push(['_setAccount', 'UA-1656750-34']);
+_gaq.push(['_trackPageview']);
+
+(function() {
+  var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+  ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ga);
+})();
+</script>
+</body>
+</html>

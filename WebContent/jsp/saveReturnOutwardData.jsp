@@ -1,0 +1,191 @@
+<%-- <%@page import="com.jniwrapper.e"%> --%>
+<%@page import="java.io.File"%>
+<%@page import="java.sql.Connection"%>
+<%@page import="java.sql.PreparedStatement"%>
+<%@page import="cts.Configuration"%>
+<%@page import="org.json.JSONArray"%>
+<%@page import="org.json.JSONObject"%>
+<%@page import="java.sql.*"%>
+<%@page import="java.io.*"%>
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+<%
+   	String jsonString=request.getParameter("jsonString");//   	
+	System.out.println("jsonString=============="+jsonString);
+	String cycNo=request.getParameter("cyclNo");//   	
+	System.out.println("\ncycNo============="+cycNo);
+	String cbs_flg=request.getParameter("cbs_flg");//  cbs_flg
+    JSONArray jsonArray=new JSONArray(jsonString);
+    String msg="",ctstoken=null,flag="";
+    int entNo=0;
+	int cnt=0;
+   int s=0;
+   
+   Connection con=Configuration.getConnection();
+   String CFG_CONTINUE_CLEARING_FLG=Configuration.getConfValByNm("CFG_CONTINUE_CLEARING_FLG",con);
+   try
+  	{
+	   ctstoken=request.getParameter("CTSTOKEN");
+	   flag=request.getParameter("flag");
+	   
+   	PreparedStatement ps=null,ps1=null,ps2=null;
+   	
+   	con.setAutoCommit(false);
+    String date=Configuration.getDDMMYYYY();
+	String ddmmyy=Configuration.getDDMMYY();
+	System.out.println("\n\n\ndate="+date);
+	String cntQry="select count(*) from RETRUNOUTWARD where RTO_DDMMYYYY = ? and RTO_STATUS!='D'";
+	String entQry=" select max(RTO_ENTNO)+1 from RETRUNOUTWARD_HISTORY where RTO_DDMMYYYY = ?";
+	String delQry=" delete from RETRUNOUTWARD where RTO_DDMMYYYY = ? and RTO_STATUS!='D'";
+	String inshstQry="  insert into RETRUNOUTWARD_HISTORY(RTO_BOFD, RTO_CHEQUENO, RTO_SORTCODE, RTO_TRANSACTIONCODE," 
+		+" RTO_AMOUNT, RTO_ACCOUNTNUMBER, RTO_RETURNREASONCODE, RTO_STATUS, RTO_PAYORBANKROUTNO,"
+		+" RTO_UNIQUENO, RTO_DDMMYYYY, RTO_XMLFILENAME, RTO_CLEARINGTYPE, RTO_WRN_CODE,"
+		+" RTO_RETREASONCOMMT,RTO_ITEMSEQUENCENO,RTO_ENTNO) select RTO_BOFD, RTO_CHEQUENO, RTO_SORTCODE, RTO_TRANSACTIONCODE,"
+		+" RTO_AMOUNT, RTO_ACCOUNTNUMBER, RTO_RETURNREASONCODE, RTO_STATUS, RTO_PAYORBANKROUTNO," 
+		+" RTO_UNIQUENO, RTO_DDMMYYYY, RTO_XMLFILENAME, RTO_CLEARINGTYPE, RTO_WRN_CODE," 
+		+" RTO_RETREASONCOMMT,RTO_ITEMSEQUENCENO,? from RETRUNOUTWARD where RTO_DDMMYYYY = ? and RTO_STATUS!='D'";
+	String instQry=" insert into RETRUNOUTWARD( RTO_BOFD, RTO_CHEQUENO, RTO_SORTCODE, RTO_TRANSACTIONCODE,"
+		  +" RTO_AMOUNT, RTO_ACCOUNTNUMBER, RTO_RETURNREASONCODE, RTO_STATUS, RTO_PAYORBANKROUTNO," 
+		  +" RTO_DDMMYYYY, RTO_CLEARINGTYPE, " 
+		  +" RTO_RETREASONCOMMT,RTO_ITEMSEQUENCENO,RTO_CONTI_CYCNO) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+	
+	
+	
+	//CFG_CONTINUE_CLEARING_FLG
+	PreparedStatement entPst=con.prepareStatement(entQry);
+	entPst.setString(1,date);
+	ResultSet entRs=entPst.executeQuery();
+	if(entRs.next())
+	{
+		entNo=entRs.getInt(1);
+	}
+	if(entNo<=0)
+	{
+		entNo=1;
+	}
+	System.out.println("entNo====="+entNo);
+	entRs.close();
+	entPst.close();
+	
+	ps=con.prepareStatement(cntQry);
+	ps.setString(1,date);
+	ResultSet rs=ps.executeQuery();
+	if(rs.next())
+	{
+		cnt=rs.getInt(1);
+	}
+	System.out.println("cnt======"+cnt);
+	//rs.close();
+	//ps.close();
+	if(cnt>0)
+	{
+		ps1=con.prepareStatement(inshstQry);
+		ps1.setInt(1,entNo);
+		ps1.setString(2,date);
+		int n=ps1.executeUpdate();
+		System.out.println("n=="+n);
+		//ps1.close();
+		if(n>0)
+		{
+			PreparedStatement pst=con.prepareStatement(delQry);
+			pst.setString(1,date);
+			int c=pst.executeUpdate();
+			System.out.println("c=="+c);
+			//pst.close();
+		}
+		
+	}	
+	
+ 
+   for(int j=0;j<jsonArray.length();j++)
+	{
+		JSONObject obj=jsonArray.getJSONObject(j);
+		String tranCode=obj.getString("TRANCODE");
+		String bofdrouteno=obj.getString("BOFDROUTNO");
+		String cheqno=obj.getString("CHQNO");
+		String sortcode=obj.getString("SORTCODE");
+		String amount=obj.getString("AMOUNT");
+		String accno=obj.getString("ACCNO");
+		String returnreasoncode=obj.getString("RETREASONCODE");
+		String retreasoncmmnt=obj.getString("RETREASONCMMNT");
+		String clotype=obj.getString("CLETYPE");
+		String itemSeqNo=obj.getString("ITEMSEQNO");
+		
+		System.out.println("amount====================="+amount);
+		
+			ps2=con.prepareStatement(instQry);
+			ps2.setString(1,bofdrouteno);
+			ps2.setString(2,cheqno);
+			ps2.setString(3,sortcode);
+			ps2.setString(4,tranCode);
+			ps2.setString(5,amount);
+			ps2.setString(6,accno);
+			ps2.setString(7,returnreasoncode);
+			ps2.setString(8,"Y");
+			ps2.setString(9,sortcode);
+			//ps2.setString(10,itemSeqNo);
+			ps2.setString(10,date);
+			ps2.setString(11,clotype);
+			ps2.setString(12,retreasoncmmnt);
+			ps2.setString(13,itemSeqNo);
+			if(CFG_CONTINUE_CLEARING_FLG.equalsIgnoreCase("Y") && cbs_flg.equalsIgnoreCase("Y"))
+			{ 
+				ps2.setString(14,cycNo);
+			}
+			else
+				ps2.setString(14,"");
+			  
+			s=ps2.executeUpdate();
+			
+		}
+  		 System.out.println("S=="+s);
+   		if(s>0)
+   		{
+   			msg="Return Outward entries saved Successfully!";
+   			
+   			con.commit();
+   			ps2.close();
+			con.close();
+   		}
+   		else
+   		{
+   			msg="Problem in Saving!";
+   			con.rollback();
+   		}
+	}
+   catch(SQLException e)
+    {       
+ 	 //con.close();
+ 	 		con.rollback();
+			e.printStackTrace();
+			msg="SqlException in Saving!";
+     }
+    catch(Exception j)
+     {      
+			//con.close();
+			con.rollback();
+			j.printStackTrace();
+			msg="Exception in Saving!";
+     }
+		
+  	// response.sendRedirect("../returnOutward_manually.jsp?msg1="+msg);	
+   
+%>
+<html>
+<script language="javascript">
+function Forward()
+{
+	document.getElementById("formid").action="../returnOutward_manually.jsp";
+	document.getElementById("formid").method="POST";
+	document.getElementById("formid").submit();
+}
+
+</script>
+<body onLoad="Forward()">
+<form id="formid" name="formid" method="post">
+	<input type="hidden" id="CTSTOKEN" name="CTSTOKEN" value="<%=ctstoken%>">
+	<input type="hidden" id="msg1" name="msg1" value="<%=msg%>">
+	<input type="hidden" id="flag" name="flag" value="<%=flag%>">
+</form>
+</body>
+</html>

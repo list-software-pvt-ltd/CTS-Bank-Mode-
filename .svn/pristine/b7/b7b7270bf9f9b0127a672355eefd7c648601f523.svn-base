@@ -1,0 +1,2135 @@
+package cts;
+
+import javax.xml.stream.*;
+
+import java.io.*;
+import java.util.*;
+import java.security.PrivateKey;
+import java.sql.*;
+public class Engine
+{
+	String fileName = new String();
+	String bankCode = null;
+	String clrType = null;
+	public static String err_status="SUCCESS";
+	private String bankcode=null;
+	private String securityoriginatorname=null;
+	private String securityauthenticatorname=null;
+	private String securitykeyname=null;
+	private String versionnumber=null;
+	private String digitalsignaturemethod=null;
+	private String securitykeysize=null;
+	private String ViewSideIndicator;
+	private String ViewFormat;
+	private String source;
+	private String imageUsability;
+	private static int counter=1;
+	Connection con;
+	
+	public Engine(Connection c)
+	{
+		System.out.println("******** inside Engin constructor ****");
+		System.out.println("******** inside Engin constructor ****");
+		securityoriginatorname=Configuration.getConfValByNm("CFG_SECURITYORIGINNM_FORXML",c);
+		securityauthenticatorname=Configuration.getConfValByNm("CFG_SECURITYAUTHNM_FORXML",c);
+		securitykeyname=Configuration.getConfValByNm("CFG_SECURITYKEYNM_FORXML",c);
+		//versionnumber=Configuration.getConfValByNm("CFG_NPCIVERSIONNO_FORXML");
+		digitalsignaturemethod=Configuration.getConfValByNm("CFG_DIGITALSIGNMETHOD_FORXML",c);
+		securitykeysize=Configuration.getConfValByNm("CFG_SECURITYKEYSIZE_FORXML",c);
+		imageUsability="";//Configuration.getConfValByNm("CFG_IMAGEUSABILITY");
+		System.out.println("******** inside Engin constructor ****");
+		System.out.println("******** inside Engin constructor ****");
+		con=c;
+	}
+
+	public String getFileName()
+	{
+		return fileName;
+	}
+
+	public static void main(String ar[])
+	{
+		//new Engine().generateRRF("1");
+	}
+
+	public boolean generateCXF(ArrayList<Item> itemAL,String CIBF_fileName)
+	{
+		//System.out.println("**** inside generateCXF *******");
+		//System.out.println("**** itemAL.size() *******"+itemAL.size());
+		//this.imgData = imgData;
+		versionnumber=Configuration.getConfValByNm("CFG_NPCIVERSIONNO_CLROWD",con);
+		boolean flg=false;
+		StringBuffer strPk=new StringBuffer();
+		fileName = CIBF_fileName.replace("CIBF","CXF");
+		fileName=fileName.substring(0,fileName.lastIndexOf("_"))+".XML";
+		String fileId=fileName.substring(fileName.lastIndexOf("_")+1,fileName.lastIndexOf("."));
+		String[] dateTimeArr=fileName.split("_");
+		String creationDate=dateTimeArr[2];
+		String creationTime=dateTimeArr[3];
+		//System.out.println("creationDate:::"+creationDate);
+		//System.out.println("creationTime:::"+creationTime);
+		//System.out.println("CXF File ID:::"+fileId);
+		//clrType = rec[4];
+		String CXF_doneFileName=fileName;
+		CXF_doneFileName=CXF_doneFileName.replace("XML","XML.done");
+		//System.out.println("CXF_doneFileName:::"+CXF_doneFileName);
+		XMLOutputFactory xof = null;
+		XMLStreamWriter xtw = null;
+		PreparedStatement ps=null;
+		FileOutputStream fos=null;
+		//Connection con=null;
+
+		try
+		{
+			xof =  XMLOutputFactory.newInstance();
+			String path = Configuration.getConfValByNm("CFG_uploadpath_to_chi",con);
+			fos=new FileOutputStream(path+"/"+fileName);
+			Writer writer = new OutputStreamWriter(fos, "UTF-8");
+			xtw = xof.createXMLStreamWriter(writer);
+			
+
+			xtw.writeStartDocument("UTF-8","1.0");
+			xtw.writeStartElement("FileHeader");
+			xtw.writeAttribute("xmlns","urn:schemas-ncr-com:ECPIX:CXF:FileStructure:"+versionnumber);
+			xtw.writeAttribute("VersionNumber", versionnumber);
+			xtw.writeAttribute("TestFileIndicator", "P");// it must be P
+			xtw.writeAttribute("CreationDate",creationDate);
+			xtw.writeAttribute("CreationTime",creationTime);
+			xtw.writeAttribute("FileID",fileId);//decide the FileID
+
+			int j=0;
+			int totalNoOfItems=0;
+			long totalAmount=0;
+			//for(ItemInformation itemBean:itemData)
+			totalNoOfItems=itemAL.size();
+			//System.out.println("itemAL size::"+itemAL.size());
+			String allCheque="";
+			for(Item item:itemAL)
+			{//1
+				//System.out.println("\n\titem::"+item);
+				ArrayList<ItemInformation> _itemInfoBeanAl=item.getItemInfoBeanAl();//Error at time of kagal
+				ArrayList<ImageBean> _imageBeanAl=item.getImageBeanAl();
+				ArrayList<MicrDataInformation> _micrBeanAl=item.getMicrBeanAl();
+				ArrayList<AddendATag> _addendATagAl=item.getAddendATagAl();
+				//System.out.println("\n\n_itemInfoBeanAl size()::"+_itemInfoBeanAl.size());
+				//System.out.println("\n\n_micrBeanAl size()::"+_micrBeanAl.size());
+				//System.out.println("\n\naddendATagAl size()::"+ _addendATagAl.size());
+				//System.out.println("\n\n _imageBeanAl size()::"+ _imageBeanAl.size());
+
+				ItemInformation itemInfo =_itemInfoBeanAl.get(0);
+				MicrDataInformation micrBean=_micrBeanAl.get(0);
+				AddendATag _addendATag=_addendATagAl.get(0);
+
+				String ourBnkCode=micrBean.getOurBnkCode();
+				String chqNo=micrBean.getChqNo();
+				String sortCode=micrBean.getSortCode();
+				String tranNo=micrBean.getTranNo();
+				String amount=micrBean.getAmount();
+				String accNo=micrBean.getAccNo();
+				String signatureData=micrBean.getSignatureData();
+				String signatureLength=micrBean.getSignatureLength();
+				String PPRTOFOLLOW=micrBean.getPprToFollow();
+				String iqaStatus=micrBean.getIqaStatus();
+				String DepositorAcct=micrBean.getDepositorAcct();
+				String BOFDBusDate=micrBean.getBOFDBusDate();
+				String BOFDRoutNo=micrBean.getBOFDRoutNo();
+				String clo_olbc=itemInfo.getClo_Olbc();
+				String payeeName= micrBean.getPayeeName();
+				payeeName=payeeName.trim();
+				String IQAIgnoreInd=micrBean.getIqaignoreind();
+				String docType="";
+
+				
+				if(PPRTOFOLLOW.equals("N"))
+				{
+					 docType="B";
+					 //IQAIgnoreInd="0";
+				}
+				else
+				{
+					docType="C";
+					/*if(iqaStatus.equals("FAIL"))
+						IQAIgnoreInd="1"; //IQAIgnoreInd :  is optional field
+					else
+						IQAIgnoreInd="0";*/
+				}
+
+				String ifsc=_addendATag.getIFSC();
+				//System.out.println("ourBnkCode:::"+ourBnkCode);
+				System.out.println("chqNo:::"+chqNo);
+				//System.out.println("sortCode:::"+sortCode);
+				//System.out.println("tranNo:::"+tranNo);
+				//System.out.println("amount:::"+amount);
+				//System.out.println("accNo:::"+accNo);
+				//System.out.println("signatureLength:::"+signatureLength);
+				//System.out.println("_imageBeanAl size:::"+_imageBeanAl.size());
+
+				totalAmount += getAmount(amount);
+				String MICRFingerPrint=chqNo+";"+sortCode+";"+accNo+";"+tranNo+";"+amount+";";
+				String itemSeqNo=itemInfo.getItemSeqNumber();
+				strPk.append(chqNo+"#"+sortCode+"#"+tranNo+"#"+amount+"#"+accNo+"#"+itemSeqNo+"!@!");
+				xtw.writeStartElement("Item");
+				xtw.writeAttribute("ItemSeqNo",itemSeqNo);
+				//MICR Data					SerialNo;PayorBankRoutNo;TransCode;Amount
+				xtw.writeAttribute("PayorBankRoutNo",sortCode);//chqNo+sortCode+tranNo+amount
+				xtw.writeAttribute("Amount",Long.parseLong(amount)+"");
+				if(accNo.length()>0)
+					xtw.writeAttribute("AccountNo",accNo);
+				xtw.writeAttribute("SerialNo",chqNo);
+				xtw.writeAttribute("TransCode",tranNo);
+				//MICR Data Ends Here...
+				xtw.writeAttribute("PresentingBankRoutNo",ourBnkCode);
+				xtw.writeAttribute("PresentmentDate",Configuration.getDDMMYYYY());//cheque scanning date
+				xtw.writeAttribute("CycleNo","01");//default is 1
+				xtw.writeAttribute("NumOfImageViews","3");
+				xtw.writeAttribute("ClearingType",itemInfo.getClearingType());//02 means LOCAL HIGH VALUE CHEQUES
+				xtw.writeAttribute("DocType",docType);
+				xtw.writeAttribute("MICRRepairFlags","000000");//default 000000
+				xtw.writeAttribute("UserField",payeeName); // ----- optional ...
+				/*if(IQAIgnoreInd.equalsIgnoreCase("Y"))
+				{
+					//IQAIgnoreInd="1";
+					xtw.writeAttribute("IQAIgnoreInd","1");
+				}*/
+				
+
+				//this value we can get from .txt file given by custodian
+				xtw.writeStartElement("AddendA");
+				xtw.writeAttribute("BOFDRoutNo",BOFDRoutNo);
+				xtw.writeAttribute("BOFDBusDate",BOFDBusDate);
+				xtw.writeAttribute("IFSC",ifsc);
+				xtw.writeEndElement();//AddendA
+
+				xtw.writeStartElement("MICRDS");
+				xtw.writeAttribute("Source","Capture");
+				xtw.writeAttribute("DigitalSignatureMethod",digitalsignaturemethod);
+				xtw.writeAttribute("SecurityKeySize",securitykeysize);
+				xtw.writeAttribute("MICRFingerPrint",MICRFingerPrint);
+				xtw.writeAttribute("DigitalSignatureLength","344");//signatureLength
+				xtw.writeAttribute("SignatureData",signatureData);
+				xtw.writeAttribute("SecurityOriginatorName",securityoriginatorname.length()<16?securityoriginatorname:securityoriginatorname.substring(0,16));
+				xtw.writeAttribute("SecurityAuthenticatorName",securityauthenticatorname.length()<16?securityauthenticatorname:securityauthenticatorname.substring(0,16));
+				xtw.writeAttribute("SecurityKeyName",securitykeyname.length()<16?securitykeyname:securitykeyname.substring(0,16));
+				xtw.writeEndElement();//MICRDS
+				//System.out.println("\n\n\n1");
+
+				for(ImageBean  imageBean:_imageBeanAl)
+				{//2
+					//System.out.println("**** inside ImageBean *****");
+
+					xtw.writeStartElement("ImageViewDetail");
+					xtw.writeAttribute("ViewFormat",imageBean.getViewFormat());
+					xtw.writeAttribute("CompressionType",imageBean.getImageCompressionType());// default none is allow
+					xtw.writeAttribute("ViewSideIndicator",imageBean.getViewSideIndicator());
+					xtw.writeAttribute("ViewDescriptor","Full");//default 'Full'
+					xtw.writeAttribute("ImageAvailable","Y");//default is Y
+					xtw.writeStartElement("ImageViewData");
+					xtw.writeAttribute("ImageDataLength",imageBean.getImageDataLength());
+					xtw.writeAttribute("ImageDataOffset",imageBean.getImageDataOffset());
+					xtw.writeAttribute("FileName",imageBean.getFileName());
+					xtw.writeAttribute("ClippingOrigin","0");//0 indicate Full image so don't  change it
+					xtw.writeEndElement();//ImageViewData
+
+					xtw.writeStartElement("ImageDS");
+					xtw.writeAttribute("Source","Capture");
+					xtw.writeAttribute("DigitalSignatureMethod",digitalsignaturemethod);
+					xtw.writeAttribute("SecurityKeySize",imageBean.getSecurityKeySize());
+					xtw.writeAttribute("StartOfProtectedData",imageBean.getImageDataOffset());
+					xtw.writeAttribute("ProtectedDataLength",imageBean.getImageDataLength());
+					xtw.writeAttribute("DigitalSignatureDataOffset",imageBean.getDigitalSignatureDataOffset());
+					xtw.writeAttribute("DigitalSignatureLength",imageBean.getDigitalSignatureLength());
+					xtw.writeAttribute("FileName",imageBean.getFileName());
+					xtw.writeAttribute("SecurityOriginatorName",securityoriginatorname.length()<16?securityoriginatorname:securityoriginatorname.substring(0,16));
+					xtw.writeAttribute("SecurityAuthenticatorName",securityauthenticatorname.length()<16?securityauthenticatorname:securityauthenticatorname.substring(0,16));
+					xtw.writeAttribute("SecurityKeyName",securitykeyname.length()<16?securitykeyname:securitykeyname.substring(0,16));
+					xtw.writeEndElement();//ImageDS
+					xtw.writeStartElement("ImageViewAnalysis");
+					xtw.writeAttribute("Source","Capture");
+					xtw.writeAttribute("ImageQuality","0");
+					xtw.writeAttribute("ImageUsability","0");//0 b'coz image is not tested
+					xtw.writeAttribute("ImagingBankSpecificTest","0");
+					xtw.writeEndElement();//ImageViewAnalysis
+					xtw.writeEndElement();//ImageViewDetail
+				}//2
+				//System.out.println(":::::::::");
+				//System.out.println(":::::::::");
+				//System.out.println(":::::::::");
+				xtw.writeEndElement();//Item
+			}//1
+			//System.out.println("\n\n\n2");
+			xtw.writeStartElement("FileSummary");
+			String totnoOfItem=Integer.toString(totalNoOfItems);
+			String totAmt=Long.toString(totalAmount);
+			xtw.writeAttribute("TotalItemCount",totnoOfItem);
+			xtw.writeAttribute("TotalAmount",totAmt);// here sum of amount fileds of Item tag
+			xtw.writeEndElement();//FileSummary
+			xtw.writeEndElement();//FileHeader Ends Here
+			xtw.writeEndDocument();
+			xtw.flush();
+			xtw.close();
+			fos.flush();
+			fos.close();
+			if(!flg)
+			{
+				//create .done file
+				String CIBF_DonefileName=CIBF_fileName;
+				CIBF_DonefileName=CIBF_DonefileName.replace("img","img.done");
+				//System.out.println("CIBF_DonefileName::>>"+CIBF_DonefileName);
+				//path+"/"+fileName
+				PrintWriter pw=new PrintWriter(path+"/"+CXF_doneFileName);
+				pw.flush();
+				pw.close();
+				PrintWriter pw2=new PrintWriter(path+"/"+CIBF_DonefileName);
+				pw2.flush();
+				pw2.close();
+				String scannerStr=Configuration.getConfValByNm("CFG_SCANNER",con);
+				//con=Configuration.getConnection();
+				String sql="update CLEARINGOUTWARD set CLO_CONVERT_FLG='D'";
+				sql+=" ,CLO_XMLFILENAME=?";
+				//sql+=" ,CLO_ITEMSEQNO=?";
+				sql+=" WHERE CLO_ITEMSEQNO=?";
+				//sql+=" AND CLO_SORTCD=?";
+				//sql+=" AND CLO_TRANCD=?";
+				//sql+=" AND CLO_AMOUNT=?";
+				sql+=" AND CLO_DATE_DDMMYYYY=?";
+				//if(scannerStr.equalsIgnoreCase("PANINI"))
+				//	sql+=" AND CLO_DRAWEE_ACCNO=?";
+				sql+=" AND CLO_CONVERT_FLG='Y'";
+				ps=con.prepareStatement(sql);
+
+				//update all records
+				String[] allItems=strPk.toString().split("!@!");
+				//System.out.println("\n\n\tallItems="+allItems.length);
+				for(int i=0;i<allItems.length;i++)
+				{
+					//System.out.println("\n\n\t in loop of update:::::>>>"+i);
+					System.out.println("\n\n\t allItems[i]:::::>>>"+allItems[i]);
+					String[] singleItem=allItems[i].split("#");
+					String CLO_CHQNO=singleItem[0];
+					String CLO_SORTCD=singleItem[1];
+					String CLO_TRANCD=singleItem[2];
+					String CLO_AMOUNT=singleItem[3];
+					String CLO_DRAWEE_ACCNO=singleItem[4];
+					String itemSeqNo=singleItem[5];
+
+					System.out.println("\n\t CLO_CHQNO:"+CLO_CHQNO);
+					System.out.println("\n\t CLO_SORTCD:"+CLO_SORTCD);
+					System.out.println("\n\t CLO_TRANCD:"+CLO_TRANCD);
+					System.out.println("\n\t CLO_AMOUNT:"+CLO_AMOUNT);
+					System.out.println("\n\t CLO_DRAWEE_ACCNO:"+CLO_DRAWEE_ACCNO);
+					System.out.println("\n\t itemSeqNo:"+itemSeqNo);
+
+					ps.setString(1,fileName);
+					ps.setString(2,itemSeqNo);
+					//ps.setString(2,CLO_CHQNO);
+					//ps.setString(3,CLO_SORTCD);
+					//ps.setString(4,CLO_TRANCD);
+					//ps.setString(5,CLO_AMOUNT);
+					ps.setString(3,Configuration.getDDMMYYYY());
+					//if(scannerStr.equalsIgnoreCase("PANINI"))
+					//	ps.setString(7,CLO_DRAWEE_ACCNO);
+					if(ps.executeUpdate()==1)
+					{
+						System.out.println("\n\t Record Updated..");
+					}
+					else
+					{
+						System.out.println("\n\t Multiple Recourds Found..");
+					}
+				}
+			}
+			//System.out.println("**** EXIT from  generateCXF *******");
+		}
+		catch (XMLStreamException e)
+		{
+			System.out.println("XMLStreamException in Engine generateCXF()\n"+e.getMessage());
+			flg=true;
+		}
+		catch(SQLException e)
+		{
+			System.out.println("SQLException in Engine generateCXF()\n"+e.getMessage());
+		  	flg=true;
+		}
+		catch (IOException ie)
+		{
+			System.out.println("IOException in Engine generateCXF()\n"+ie.getMessage());
+			flg=true;
+		}
+		catch (Exception ie)
+		{
+			System.out.println("Exception in Engine generateCXF()\n"+ie.getMessage());
+			ie.printStackTrace();
+			flg=true;
+		}
+		finally
+		{
+		if (xtw != null && ps!=null && con!=null)
+		{
+			try
+			{
+				ps.close();
+				//con.close();
+				xtw.close();
+				fos.close();
+			}
+			catch(SQLException e)
+			{
+				System.out.println("\n\tSQLException"+e.getMessage());
+			}
+			catch (XMLStreamException e)
+			{
+				System.out.println("Log4\n"+e.getMessage());
+			} 
+			catch (IOException e) {
+				System.out.println("\nIOException"+e.getMessage());
+			}
+		}
+	}
+	return flg;
+}//end generateCXF
+
+	//GenerateSBS_HDFC
+	public boolean generateSBS_HDFC(ArrayList<Item> itemAL,String CIBF_fileName)
+	{
+		System.out.println("**** inside GenerateSBS_HDFC---- *******");
+		System.out.println("**** itemAL.size() *******"+itemAL.size());
+
+		boolean flg=false;
+		StringBuffer strPk=new StringBuffer();
+		fileName = CIBF_fileName.replace("SBI","SBS");
+		fileName=fileName.substring(0,fileName.lastIndexOf("."))+".XML";
+		String fileId=CIBF_fileName.substring(CIBF_fileName.lastIndexOf("_")+1,CIBF_fileName.lastIndexOf("."));
+		String[] dateTimeArr=CIBF_fileName.split("_");
+		String creationDate=dateTimeArr[3];
+		String creationTime=dateTimeArr[4];
+		System.out.println("creationDate:::"+creationDate);
+		System.out.println("creationTime:::"+creationTime);
+		System.out.println("SBS File ID:::"+fileId);
+		String vendorId,vendorName,hubLocationId,hubLocationName;
+		
+		/*String SBS_doneFileName=fileName;
+		SBS_doneFileName=SBS_doneFileName.replace("XML","XML.done");
+		System.out.println("SBS_doneFileName:::"+SBS_doneFileName);*/
+		XMLOutputFactory xof = null;
+		XMLStreamWriter xtw = null;
+		PreparedStatement ps=null;
+		//Connection con=null;
+		FileOutputStream fos=null;
+
+		try
+		{
+			xof =  XMLOutputFactory.newInstance();
+			String path = Configuration.getConfValByNm("CFG_uploadpath_to_chi",con);
+			fos=new FileOutputStream(path+"/"+fileName);
+			Writer writer = new OutputStreamWriter(fos, "UTF-8");
+			xtw = xof.createXMLStreamWriter(writer);
+			vendorId=Configuration.getConfValByNm("CFG_VENDOR_ID",con);
+			hubLocationId=Configuration.getConfValByNm("CFG_HUB_LOCATION_ID",con);
+			vendorName=Configuration.getConfValByNm("CFG_VENDOR_NAME",con);
+			hubLocationName=Configuration.getConfValByNm("CFG_HUB_LOCATION_NAME",con);
+			//OlbcNo=Configuration.getConfValByNm("CLO_OLBC");
+			//System.out.println("\n\n olbc****"+OlbcNo);
+
+
+			xtw.writeStartDocument("UTF-8","1.0");
+			xtw.writeStartElement("FileHeader");
+			xtw.writeAttribute("VendorId",vendorId);//CFG_VENDOR_ID=00875
+			xtw.writeAttribute("VendorName",vendorName);//VendorName=GKFS
+			xtw.writeAttribute("HubLocationId",hubLocationId);//HubLocationId=002
+			xtw.writeAttribute("HubLocationName",hubLocationName);//HubLocationName= New Delhi
+			//xtw.writeAttribute("TestFileIndicator", "P");// it must be P
+			xtw.writeAttribute("FileCreationDate",creationDate);
+			xtw.writeAttribute("FileCreationTime",creationTime);
+			xtw.writeAttribute("FileId",fileId);//decide the FileID
+			xtw.writeAttribute("CoreSystem",Configuration.getConfValByNm("CFG_CORE_SYSTEM",con));//coreSystem=CMS
+
+			int k;
+			int totalNoOfItems=0;
+			long totalAmount=0;
+			totalNoOfItems=itemAL.size();
+			System.out.println("itemAL size::"+itemAL.size());
+			//String allCheque="";
+			for(Item item:itemAL)
+			{//1
+				System.out.println("\n\titem::"+item);
+				ArrayList<ItemInformation> _itemInfoBeanAl=item.getItemInfoBeanAl();
+				ArrayList<ImageBean> _imageBeanAl=item.getImageBeanAl();
+				ArrayList<MicrDataInformation> _micrBeanAl=item.getMicrBeanAl();
+				ArrayList<AddendATag> _addendATagAl=item.getAddendATagAl();
+				System.out.println("\n\n_itemInfoBeanAl size()::"+_itemInfoBeanAl.size());
+				System.out.println("\n\n_micrBeanAl size()::"+_micrBeanAl.size());
+				System.out.println("\n\n addendATagAl size()::"+ _addendATagAl.size());
+				System.out.println("\n\n _imageBeanAl size()::"+ _imageBeanAl.size());
+
+				ItemInformation itemInfo =_itemInfoBeanAl.get(0);
+				MicrDataInformation micrBean=_micrBeanAl.get(0);
+				AddendATag _addendATag=_addendATagAl.get(0);
+
+				String ourBnkCode=Configuration.getConfValByNm("CFG_BANKROUTINGCODE",con);
+				String chqNo=micrBean.getChqNo();
+				String sortCode=micrBean.getSortCode();
+				String tranNo=micrBean.getTranNo();
+				String amount=micrBean.getAmount();
+				String accNo=micrBean.getAccNo();
+				//accNo=accNo.substring(accNo.length()-7, accNo.length());//sam
+				//String signatureData=micrBean.getSignatureData();
+				String signatureLength=micrBean.getSignatureLength();
+				String PPRTOFOLLOW=micrBean.getPprToFollow();
+				//String iqaStatus=micrBean.getIqaStatus();
+				String DepositorAcct=micrBean.getDepositorAcct();
+				//String BOFDBusDate=micrBean.getBOFDBusDate();
+				String BOFDRoutNo=micrBean.getBOFDRoutNo();
+				String clo_olbc=itemInfo.getClo_Olbc();
+				String payeeName= micrBean.getPayeeName();
+				System.out.println("\n\nPayeeName="+payeeName+"\n\n");
+				String docType="";
+				//String ImageIQAFlags="";
+				//String ImageUAFlags="";
+				//String newbritemSeqNo="";
+				//String itemSeqNo=itemInfo.getItemSeqNumber();
+
+				
+				  //String IQAIgnoreInd=""; 
+				  if(PPRTOFOLLOW.equals("N")) 
+				  {
+					  docType="B";
+					  //IQAIgnoreInd="0";
+				  } 
+				  else 
+				  { 
+					  docType="C"; 
+				  }
+					/* if(iqaStatus.equals("FAIL"))IQAIgnoreInd="1"; */ //IQAIgnoreInd : is optional field else IQAIgnoreInd="0"; }
+				 
+				String ifsc=_addendATag.getIFSC();
+				System.out.println("ourBnkCode:::"+ourBnkCode);
+				System.out.println("chqNo:::"+chqNo);
+				System.out.println("sortCode:::"+sortCode);
+				System.out.println("tranNo:::"+tranNo);
+				System.out.println("amount:::"+amount);
+				System.out.println("accNo:::"+accNo);
+
+				System.out.println("signatureLength:::"+signatureLength);
+				System.out.println("_imageBeanAl size:::"+_imageBeanAl.size());
+				totalAmount += getAmount(amount);
+				//String MICRFingerPrint=chqNo+";"+sortCode+";"+tranNo+";"+amount+";";//sam
+			
+				vendorId=Configuration.lPad(""+Integer.parseInt(vendorId),5,"0");
+				clo_olbc=clo_olbc.substring(clo_olbc.length()-6, clo_olbc.length());
+				String itemSeqNo=itemInfo.getItemSeqNumber();
+				//String branchcd=itemInfo.getBranchCode();
+				
+				//String britemSeqNo=itemSeqNo.substring(itemSeqNo.length()>=6?(itemSeqNo.length()-5):0, itemSeqNo.length());
+				String newitemSeqNo=vendorId+hubLocationId;//+brStr;//newbritemSeqNo;
+				String brStr=Configuration.lPad(""+(++counter),(14-newitemSeqNo.length()),"0");//Configuration.lPad(""+(Long.parseLong(branchcd)*100),4,"0");
+				newitemSeqNo=newitemSeqNo+brStr;
+				/*
+				 * if(branchcd.length()<2)
+				 * newbritemSeqNo=Long.parseLong(britemSeqNo)+((Long.parseLong(branchcd)*100000)
+				 * ); else
+				 */
+				
+				//newbritemSeqNo=Long.parseLong(britemSeqNo)+brStr;//((Long.parseLong(branchcd)*10000));
+				
+				//System.out.println("\n newbritemSeqNo======"+newbritemSeqNo+"\n\n");
+				
+				System.out.println("\n newitemSeqNo="+newitemSeqNo+"\n\n");
+				
+				strPk.append(chqNo+"~"+sortCode+"~"+tranNo+"~"+amount+"~"+accNo+"~"+itemSeqNo+"~"+newitemSeqNo+"!@!");
+				xtw.writeStartElement("Item");
+				xtw.writeAttribute("ItemSeqNo",newitemSeqNo);
+				xtw.writeAttribute("PayorBankRoutNo",sortCode);
+				xtw.writeAttribute("Amount",Long.parseLong(amount)+"");
+				xtw.writeAttribute("AccountNo",accNo);
+				xtw.writeAttribute("SerialNo",chqNo);
+				xtw.writeAttribute("TransCode",tranNo);
+				xtw.writeAttribute("PresentmentDate",Configuration.getDDMMYYYY());//cheque scanning date
+				xtw.writeAttribute("ClearingType",itemInfo.getClearingType());//02 means LOCAL HIGH VALUE CHEQUES
+				xtw.writeAttribute("DocType",docType);
+				xtw.writeAttribute("MICRRepairFlag","000000");//default 000000
+				xtw.writeAttribute("TruncatingRoutNo",ourBnkCode);// ----- optional ...
+
+				String tempPayeeNm=payeeName;
+				payeeName="";
+				for(int z=0;z<tempPayeeNm.length();z++)
+				{
+					int ascii=tempPayeeNm.charAt(z);
+					if((ascii>=65 && ascii<=90) || (ascii>=97 && ascii<=122))
+						payeeName=payeeName+(char)ascii;
+				}
+				xtw.writeAttribute("UserField",payeeName); // ----- optional ...
+				xtw.writeAttribute("ImageQuality","2");//0 b'coz image is not tested
+				xtw.writeAttribute("ImageUsability","0");//0 b'coz image is not tested
+				xtw.writeAttribute("ImageIQAFlags","2222222222222222");
+				xtw.writeAttribute("ImageUAFlags","00000000000000");
+				xtw.writeAttribute("BOFDRoutNo",BOFDRoutNo);
+				xtw.writeAttribute("BOFDBusDate",Configuration.getDDMMYYYY());
+				xtw.writeAttribute("DepositorAcct",DepositorAcct);//**** ----- optional ...
+				xtw.writeAttribute("IFSC",ifsc);
+				xtw.writeAttribute("ImageBinaryFileName",CIBF_fileName);
+				k=1;
+				for(ImageBean  imageBean:_imageBeanAl)
+				{//2
+					System.out.println("**** inside ImageBean *****");
+
+					xtw.writeAttribute("ImageDetails"+k+"-ViewSideIndicator",imageBean.getViewSideIndicator());
+					xtw.writeAttribute("ImageDetails"+k+"-ImageDataOffset",imageBean.getImageDataOffset());
+					xtw.writeAttribute("ImageDetails"+k+"-ImageDataLength",imageBean.getImageDataLength());
+					k++;
+				}//2
+				System.out.println(":::::::::");
+				System.out.println(":::::::::");
+				System.out.println(":::::::::");
+				xtw.writeEndElement();//Item
+			}//1
+			System.out.println("\n\n\n2");
+			xtw.writeStartElement("FILEFOOTER");
+			String totnoOfItem=Integer.toString(totalNoOfItems);
+			String totAmt=Long.toString(totalAmount);
+			xtw.writeAttribute("TotalItemCount",totnoOfItem);
+			xtw.writeAttribute("TotalAmount",totAmt);// here sum of amount fileds of Item tag
+			xtw.writeEndElement();//FILEFOOTER
+
+			xtw.writeEndElement();//FileHeader Ends Here
+			xtw.writeEndDocument();
+
+			xtw.flush();
+			xtw.close();
+			fos.flush();
+			fos.close();
+			if(!flg)
+			{
+			/*	String CIBF_DonefileName=CIBF_fileName;
+				CIBF_DonefileName=CIBF_DonefileName.replace("img","img.done");
+				System.out.println("CIBF_DonefileName::>>"+CIBF_DonefileName);
+				PrintWriter pw=new PrintWriter(path+"/"+SBS_doneFileName);
+				pw.flush();
+				pw.close();
+				PrintWriter pw2=new PrintWriter(path+"/"+CIBF_DonefileName);
+				pw2.flush();
+				pw2.close();*/
+
+				//con=Configuration.getConnection();
+				String sql="update CLEARINGOUTWARD set CLO_CONVERT_FLG='D',";
+				sql+=" CLO_XMLFILENAME=?,";
+				sql+=" CLO_ITEMSEQNO=?";
+				sql+=" WHERE CLO_ITEMSEQNO=?";
+				sql+=" AND CLO_DATE_DDMMYYYY=?";
+				sql+=" AND CLO_CONVERT_FLG='Y'";
+
+				ps=con.prepareStatement(sql);
+				String[] allItems=strPk.toString().split("!@!");
+				System.out.println("\n\n\tallItems="+allItems.length);
+				for(int i=0;i<allItems.length;i++)
+				{
+					System.out.println("\n\n\t in loop of update:::::>>>"+i);
+					System.out.println("\n\n\t allItems[i]:::::>>>"+allItems[i]);
+					String[] singleItem=allItems[i].split("~");
+					/*
+					 * String CLO_CHQNO=singleItem[0]; String CLO_SORTCD=singleItem[1]; String
+					 * CLO_TRANCD=singleItem[2]; String CLO_AMOUNT=singleItem[3]; String
+					 * CLO_DRAWEE_ACCNO=singleItem[4];
+					 */
+					String itemSeqNo=singleItem[5];
+					String newitemSeqNo=singleItem[6];
+
+					
+					//System.out.println("\n\t CLO_SORTCD:"+CLO_SORTCD);
+					//System.out.println("\n\t CLO_TRANCD:"+CLO_TRANCD);
+					//System.out.println("\n\t CLO_AMOUNT:"+CLO_AMOUNT);
+					//System.out.println("\n\t CLO_DRAWEE_ACCNO:"+CLO_DRAWEE_ACCNO);
+					System.out.println("\n\t itemSeqNo:"+itemSeqNo);
+					System.out.println("\n\t newitemSeqNo:"+newitemSeqNo);
+
+					ps.setString(1,fileName);
+					ps.setString(2,newitemSeqNo);
+					ps.setString(3,itemSeqNo);
+					ps.setString(4,Configuration.getDDMMYYYY());
+					
+					if(ps.executeUpdate()>0)
+					{
+						System.out.println("\n\t Record Updated..");
+					}
+				}
+			}
+			System.out.println("**** EXIT from  generateSBS_HDFC *******");
+		}
+		catch (XMLStreamException e)
+		{
+		  System.out.println("XMLStreamException in Engine generateSBS()\n"+e.getMessage());
+		  flg=true;
+		}
+		catch(SQLException e)
+		{
+			System.out.println("SQLException in Engine generateSBS()\n"+e.getMessage());
+		  	flg=true;
+		}
+		catch (IOException ie)
+		{
+		  System.out.println("IOException in Engine generateSBS()\n"+ie.getMessage());
+		  flg=true;
+		}
+		catch (Exception ie)
+		{
+			System.out.println("Exception in Engine generateSBS()\n"+ie.getMessage());
+			ie.printStackTrace();
+			 flg=true;
+		}
+		finally
+		{
+		  if (xtw != null && ps!=null && con!=null)
+		  {
+		    try
+		    {
+					ps.close();
+					//con.close();
+		      		xtw.close();
+		      		fos.close();
+		    }
+		    catch(SQLException e)
+		    {
+				System.out.println("\n\tSQLException"+e.getMessage());
+			}
+		    catch (XMLStreamException e)
+		    {
+		      System.out.println("Log4\n"+e.getMessage());
+		    } 
+		    catch (IOException e) {
+		    	System.out.println("\nIOException"+e.getMessage());
+			}
+		  }
+		}
+		return flg;
+	}//end GenerateSBS_HDFC
+
+	public static boolean fetchextensionoutward(String clearingtype,String extensionperiod,String extensionreasoncode)
+	{//1
+                System.out.println("\n\t inside Engine.fetchextensionoutward() ====="+clearingtype);
+				boolean flg=false;
+				PreparedStatement psInsert=null,psselect=null;
+				Connection con=null;
+				System.out.println("clearingtype::"+clearingtype);
+				 System.out.println("extensionperiod::"+extensionperiod);
+				 	 System.out.println("extensionreasoncode::"+extensionreasoncode);
+		try
+		{
+         con=Configuration.getConnection();
+		 String todaydate=Configuration.getDDMMYYYY();
+		 String todaytime=Configuration.getHHMISS();
+		 psselect=con.prepareStatement("select  cli_itemsequenceno,cli_payorbankroutno,cli_amount,cli_accountno,cli_serialno,cli_transcode,cli_presentingbankroutno,cli_presentmentdate,cli_cycleno,cli_creationdate,cli_xmlfilename from clearinginward where cli_clearingtype=? and cli_ddmmyyyy=?");
+		 psselect.setString(1,clearingtype);
+		 psselect.setString(2,todaydate);
+		 String insqry="insert into extension_outward(ext_itemseqno, ext_payorbankroutno, ext_amount, ext_accountno, ext_serialno,ext_transcode, ext_presentingbankroutno, ext_presentmentdate, ext_cycleno,ext_creationdate,ext_filename,ext_creationtime,  ext_ddmmyyyy, ext_status, ext_filetype, ext_wrn_code,ext_extensionperiod,ext_extensionreasoncode,ext_clearingtype) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+		 ResultSet rs=psselect.executeQuery();
+                  while(rs.next())
+				  {   psInsert=con.prepareStatement(insqry);
+						 String S1=rs.getString(1);
+						 String S2=rs.getString(2);
+						 String S3=rs.getString(3);
+						 String S4=rs.getString(4);
+						 String S5=rs.getString(5);
+						 String S6=rs.getString(6);
+						 String S7=rs.getString(7);
+						 String S8=rs.getString(8);
+						 String S9=rs.getString(9);
+						 String S10=rs.getString(10);
+						 String S11=rs.getString(11);
+
+						 String S12=Configuration.getDDMMYYYY();
+						// System.out.println(rs.getString(1)+"cli_accountno "+rs.getString(2));
+						// System.out.println(rs.getString(3)+"cli_transcode "+rs.getString(4));
+						// System.out.println(rs.getString(5)+"cli_presentingbankroutno "+rs.getString(6));
+						// System.out.println(rs.getString(7)+"cli_cycleno "+rs.getString(8));
+						// System.out.println(extensionperiod+"extensionperiod "+extensionreasoncode);
+						// System.out.println(Configuration.getDDMMYYYY()+"Configuration.getDDMMYYYY() "+extensionreasoncode);
+						        psInsert.setString(1,S1);
+								psInsert.setString(2,S2);
+								psInsert.setString(3,S3);
+								psInsert.setString(4,S4);
+								psInsert.setString(5,S5);
+								psInsert.setString(6,S6);
+								psInsert.setString(7,S7);
+								psInsert.setString(8,S8);
+								psInsert.setString(9,S9);
+								psInsert.setString(10,S10);
+								psInsert.setString(11,S11);
+								psInsert.setString(12,"");
+								psInsert.setString(13,S12);
+								psInsert.setString(14,"Y");
+								psInsert.setString(15,"");
+								psInsert.setString(16,"");
+								psInsert.setString(17,extensionperiod);
+								psInsert.setString(18,extensionreasoncode);
+								psInsert.setString(19,clearingtype);
+
+							   int i= psInsert.executeUpdate();
+							   System.out.println(i+" records inserted");
+
+
+                   }
+
+
+
+		 }
+		 catch(SQLException e)
+		{
+				System.out.println("\n\tSQLException in Engine.fetchextensionoutward()"+e);
+				err_status="Problem at inserting record to Returnoutward Table.";
+		}
+		catch(Exception e)
+		{
+				System.out.println("\n\tException in Engine.fetchextensionoutward()"+e);
+				err_status="Fail";
+		}
+		finally
+		{
+				if(psInsert!=null && con!=null)
+					{
+							try
+							{
+								psInsert.close();
+								psselect.close();
+								con.close();
+							}catch(SQLException e){}
+					}
+		}
+
+		//return flg;
+		return true;
+
+
+}
+
+	public static boolean readAndInsertRetunOutwardTextFile()
+	{
+			System.out.println("\n\t inside Engine.readAndInsertRetunOutwardTextFile() =====");
+			boolean flg=false;
+			PreparedStatement psInsert=null;
+			Connection con=null;
+			int recCount=0;
+			try
+			{
+					String rec = "";
+					con=Configuration.getConnection();
+					double newver=2.1;
+					String OURVERSIONNO=Configuration.getConfValByNm("CFG_OURVERSIONNO",con);
+					System.out.print("OURVERSIONNO=====" + OURVERSIONNO);
+					String path=Configuration.getConfValByNm("CFG_uploadpath_to_chi",con)+"ReturnOutward/";;
+					String BOFD ="";
+					String chequeNo ="";
+					String sortCode ="";
+					String tranCode ="";
+					String amount ="";
+					String accountNo ="";
+					String retReasonCode ="";
+					String payorbankroutNo="";
+					String seq_uniqueNo="";
+					String clearingType="";
+					String returnReasonCommt=" ";
+					String itemsequenceNo="";
+					
+					//File cbsFile=new File(path+"From_CBS_Return_Outward.txt"));
+					//psInsert=con.prepareStatement("Insert into RETRUNOUTWARD values(?,?,?,?,?,?,?,?,?,?,?)");
+					psInsert=con.prepareStatement("Insert into RETRUNOUTWARD(RTO_BOFD,RTO_CHEQUENO,RTO_SORTCODE,RTO_TRANSACTIONCODE,RTO_AMOUNT,RTO_ACCOUNTNUMBER,RTO_RETURNREASONCODE,RTO_STATUS,RTO_PAYORBANKROUTNO,RTO_DDMMYYYY,RTO_CLEARINGTYPE,RTO_RETREASONCOMMT,RTO_ITEMSEQUENCENO) values(?,?,?,?,?,?,?,?,?,?,?,?,?)");
+					File retOwdFile=new File(path+"From_CBS_Return_Outward.txt");
+					BufferedReader br = new BufferedReader(new FileReader(retOwdFile));
+
+					while ((rec = br.readLine()) != null)
+					{//1
+								recCount++;
+								BOFD =rec.substring(0,9);
+								chequeNo =rec.substring(9,15);
+								sortCode = rec.substring(15,24);
+								
+								tranCode = Configuration.lPad("" + Integer.parseInt(rec.substring(24,27)),3,"0");//""+Integer.parseInt(rec.substring(24,27));
+								
+								 amount = rec.substring(27,45);//Amount
+									accountNo = rec.substring(45,60);//Account No
+									//accountNo = rec.substring(61,70);//Account No
+									retReasonCode = Configuration.lPad(""+Integer.parseInt(rec.substring(60,62)),2,"0");//Ret Reason Code NOTE: 3 digits provided from CBS
+									//payorbankroutNo= sortCode;//rec.substring(62,71);this change is done in CBS...
+									payorbankroutNo=rec.substring(62,71);
+									//seq_uniqueNo=rec.substring(62,77);//unique no 15 digits
+									clearingType=rec.substring(71,73);
+								if(Double.parseDouble(OURVERSIONNO)>=newver)
+								{
+								itemsequenceNo=rec.substring(73,93);
+								}
+								else{
+									itemsequenceNo="";
+								}
+								if(returnReasonCommt.length()==0)
+								{
+									returnReasonCommt="  ";
+								}
+								
+								
+								psInsert.setString(1,BOFD);
+								psInsert.setString(2,chequeNo);
+								psInsert.setString(3,sortCode);
+								psInsert.setString(4,tranCode);
+								 System.out.println("amount=====insetr" + amount);
+								psInsert.setString(5,amount);
+								psInsert.setString(6,accountNo);
+								psInsert.setString(7,retReasonCode);
+								psInsert.setString(8,"Y");
+								psInsert.setString(9,payorbankroutNo);
+								//psInsert.setString(10,seq_uniqueNo);//RTO_UNIQUENO
+								psInsert.setString(10,Configuration.getDDMMYYYY());//RTO_DDMMYYYY chage it's index to 11
+								psInsert.setString(11,clearingType);
+								psInsert.setString(12,returnReasonCommt);
+								psInsert.setString(13,itemsequenceNo.replaceAll("\\s",""));
+
+								try
+								{
+									int result=psInsert.executeUpdate();
+										if(result>0)
+											System.out.println("record is inserted..");
+								}
+								catch(SQLException e)
+								{
+										e.printStackTrace();
+										if(!(e.getMessage().indexOf("ORA-00001")>-1))
+										{
+											throw new Exception("Exception in Engine.readAndInsertRetunOutwardTextFile()");
+										}
+								}
+
+					}//1
+					br.close();
+					retOwdFile.delete();
+					/*if(recCount==0)
+					{
+						err_status="No record present in From_Cbs_Return_Outward.txt";
+					}
+					else
+					{
+						flg=true;
+					}*/
+					/*if(recCount>0)
+					{
+							//err_status="No record present in From_Cbs_Return_Outward.txt";
+							new File(path+"From_CBS_Return_Outward.txt").delete();
+					}*/
+		}
+		catch(FileNotFoundException e)
+		{		e.printStackTrace();
+				System.out.println("\n\tFileNotFoundException in Engine.readAndInsertRetunOutwardTextFile()"+e);
+				if(e.getMessage().contains("FileNotFoundException"))
+				{
+					err_status="From_Cbs_Return_Outward.txt is file not available on upload path.";
+				}
+				if(recCount==0)
+				{
+					err_status="No record present in From_Cbs_Return_Outward.txt.";
+				}
+		}
+		catch(StringIndexOutOfBoundsException e)
+		{			e.printStackTrace();
+					System.out.println("\n\tStringIndexOutOfBound in Engine.readAndInsertRetunOutwardTextFile()"+e);
+					err_status="From_Cbs_Return_Outward.txt file is Not in Proper format.";
+		}
+		catch(SQLException e)
+		{		e.printStackTrace();
+				System.out.println("\n\tSQLException in Engine.readAndInsertRetunOutwardTextFile()"+e);
+				err_status="Problem at inserting record to Returnoutward Table.";
+		}
+		catch(Exception e)
+		{		e.printStackTrace();
+				System.out.println("\n\tException in Engine.readAndInsertRetunOutwardTextFile()"+e);
+				err_status="Fail";
+		}
+		finally
+		{
+				if(psInsert!=null && con!=null)
+					{
+							try
+							{
+								psInsert.close();
+								con.close();
+							}catch(SQLException e){}
+					}
+		}
+		System.out.println("\n\texit from  Engine.readAndInsertRetunOutwardTextFile()====>>>"+flg);
+		//return flg;
+		return true;
+	}//end readAndInsertRetunOutwardTextFile
+
+	public String generateRRF(PrivateKey privateKey)
+	{
+					//RRF_416402000_10052014_125837_03
+				//Connection con=null;
+				versionnumber=Configuration.getConfValByNm("CFG_NPCIVERSIONNO_RETOWD",con);
+					System.out.println("*** inside generateRRF *****"+Configuration.getDDMMYYYY());
+					String retVal="";
+					//getReturnFileName_HDFC
+					//String RRF_name= GetFileName.getReturnFileName_HDFC("");
+					
+					XMLOutputFactory xof =  null;
+					XMLStreamWriter xtw = null;
+
+					FileOutputStream fos=null;
+
+					long totAmt = 0;
+					int totChq = 0;
+					PreparedStatement psInsert=null;
+					PreparedStatement psUpdate=null;
+					PreparedStatement psexecute=null;
+					PreparedStatement psRO=null;
+					ResultSet rs=null,rs_count=null;
+					
+
+					int returnOutwardRecCount=0;
+					try
+					{
+						String path=Configuration.getConfValByNm("CFG_uploadpath_to_chi",con)+"ReturnOutward/";;
+						//con=Configuration.getConnection();
+						String RRF_name= GetFileName.getReturnFileName("RRF",con);
+						String[] strArr=RRF_name.split("_");
+						String creationDate=strArr[2];
+						String creationTime=strArr[3];
+
+						String str_RRF_name=RRF_name;
+						String RRF_done_name=RRF_name+".done";
+						System.out.println("RRF_done_name==="+RRF_done_name);
+						String fileId=RRF_name.substring(RRF_name.lastIndexOf("_")+1,RRF_name.lastIndexOf("."));
+						psRO=con.prepareStatement("select count(*) from RETRUNOUTWARD where RTO_DDMMYYYY=? and RTO_STATUS='Y'");
+						psRO.setString(1,Configuration.getDDMMYYYY());
+						rs_count=psRO.executeQuery();
+						while(rs_count.next())
+						{
+							 	returnOutwardRecCount=rs_count.getInt(1);
+						}
+						System.out.println("\n\t returnOutwardRecCount:"+returnOutwardRecCount);
+						//psInsert=con.prepareStatement("Insert into RETRUNOUTWARD values(?,?,?,?,?,?,?,?,?)");
+						psUpdate=con.prepareStatement("Update RETRUNOUTWARD set RTO_STATUS='D',RTO_XMLFILENAME=?, RTO_TRANSACTIONCODE=? "
+								+ "where RTO_DDMMYYYY='"+Configuration.getDDMMYYYY()+"' "
+										+ "and RTO_ITEMSEQUENCENO=? and RTO_STATUS='Y'");
+						
+						
+						String rec = "";
+						Statement st=con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
+						String oldQuery="Select r.RTO_BOFD,r.RTO_CHEQUENO,c.CLI_PAYORBANKROUTNO, r.RTO_TRANSACTIONCODE,r.RTO_AMOUNT ,r.RTO_ACCOUNTNUMBER, " + 
+								"r.RTO_RETURNREASONCODE, c.CLI_CLEARINGTYPE,c.CLI_ITEMSEQUENCENO, c.CLI_PRESENTMENTDATE,c.CLI_CYCLENO,  c.CLI_ACCOUNTNO, " + 
+								"c.CLI_PRESENTINGBANKROUTNO,c.CLI_BOFDRoutNo,c.CLI_BOFDBUSDATE, c.CLI_DEPOSITORACCT,c.CLI_IFSC,r.RTO_RETREASONCOMMT " + 
+								"from RETRUNOUTWARD R join CLEARINGINWARD C on r.RTO_ITEMSEQUENCENO =c.CLI_ITEMSEQUENCENO and R.RTO_DDMMYYYY=C.CLI_DDMMYYYY " + 
+								"where RTO_DDMMYYYY='"+Configuration.getDDMMYYYY()+"' and  r.RTO_STATUS='Y'";
+						String newQuery="Select h.CLI_BOFDROUTNO,h.CLI_SERIALNO,h.CLI_PAYORBANKROUTNO, h.CLI_TRANSCODE,h.CLI_AMOUNT ,h.CLI_ACCOUNTNO, " + 
+								"r.RTO_RETURNREASONCODE, c.CLI_CLEARINGTYPE,c.CLI_ITEMSEQUENCENO, c.CLI_PRESENTMENTDATE,c.CLI_CYCLENO,  c.CLI_ACCOUNTNO,\r\n" + 
+								"c.CLI_PRESENTINGBANKROUTNO,c.CLI_BOFDRoutNo,c.CLI_BOFDBUSDATE, c.CLI_DEPOSITORACCT,c.CLI_IFSC,r.RTO_RETREASONCOMMT,h.CLI_CLRSRNO " + 
+								"from RETRUNOUTWARD R join CLEARINGINWARD C on RTO_ITEMSEQUENCENO =c.CLI_CLRSRNO and R.RTO_DDMMYYYY=C.CLI_DDMMYYYY  " + 
+								"join CLEARINGINWARD_HISTORY H on C.CLI_DDMMYYYY= H.CLI_DDMMYYYY and C.CLI_CLRSRNO=H.CLI_CLRSRNO " + 
+								"where RTO_DDMMYYYY='"+Configuration.getDDMMYYYY()+"' and  r.RTO_STATUS='Y'";
+						/*
+						 * String
+						 * newQuery="Select r.RTO_BOFD,r.RTO_CHEQUENO,h.CLI_PAYORBANKROUTNO, r.RTO_TRANSACTIONCODE,r.RTO_AMOUNT ,r.RTO_ACCOUNTNUMBER, "
+						 * +
+						 * "r.RTO_RETURNREASONCODE, c.CLI_CLEARINGTYPE,c.CLI_ITEMSEQUENCENO, c.CLI_PRESENTMENTDATE,c.CLI_CYCLENO,  c.CLI_ACCOUNTNO,"
+						 * +
+						 * "c.CLI_PRESENTINGBANKROUTNO,c.CLI_BOFDRoutNo,c.CLI_BOFDBUSDATE, c.CLI_DEPOSITORACCT,c.CLI_IFSC,r.RTO_RETREASONCOMMT,r.RTO_ITEMSEQUENCENO "
+						 * +
+						 * "from RETRUNOUTWARD R join CLEARINGINWARD C on RTO_ITEMSEQUENCENO =c.CLI_CLRSRNO and R.RTO_DDMMYYYY=C.CLI_DDMMYYYY "
+						 * +
+						 * "join CLEARINGINWARD_HISTORY H on C.CLI_DDMMYYYY= H.CLI_DDMMYYYY and C.CLI_CLRSRNO=H.CLI_CLRSRNO "
+						 * +
+						 * "where RTO_DDMMYYYY='"+Configuration.getDDMMYYYY()+"' and  r.RTO_STATUS='Y'";
+						 */
+					
+						String sql="";
+						if(Float.parseFloat(Configuration.getConfValByNm("CFG_OURVERSIONNO", con))>2.0)
+							sql=newQuery;
+						else
+							sql=oldQuery;
+
+						System.out.println("sql:"+sql);
+						rs=st.executeQuery(sql);
+						xof =  XMLOutputFactory.newInstance();
+						String micrFile=RRF_name;
+						//path where to generaete RRF.xml
+						String path_rrf= Configuration.getConfValByNm("CFG_uploadpath_to_chi",con);
+						fos=new FileOutputStream(path_rrf+RRF_name);
+						Writer writer = new OutputStreamWriter(fos, "UTF-8");
+						xtw = xof.createXMLStreamWriter(writer);
+
+						xtw.writeStartDocument("UTF-8","1.0");
+						xtw.writeStartElement("FileHeader");
+						xtw.writeAttribute("xmlns","urn:schemas-ncr-com:ECPIX:RRF:FileStructure:010003");
+						xtw.writeAttribute("VersionNumber",versionnumber);
+						xtw.writeAttribute("TestFileIndicator","P");// it must be P
+						xtw.writeAttribute("CreationDate",creationDate);
+						xtw.writeAttribute("CreationTime",creationTime);
+						xtw.writeAttribute("FileID",fileId);//decide the FileID
+
+	/*Select r.RTO_BOFD,r.RTO_CHEQUENO,r.RTO_SORTCODE,r.RTO_TRANSACTIONCODE,r.RTO_AMOUNT,r.RTO_ACCOUNTNUMBER,
+	r.RTO_RETURNREASONCODE";
+		c.CLI_CLEARINGTYPE,c.CLI_ITEMSEQUENCENO,c.CLI_PRESENTMENTDATE,c.CLI_CYCLENO,c.ACCOUNTNO,c.CLI_PRESENTINGBANKROUTNO,
+		c.CLI_BOFDRoutNo,c.BOFDBusDate,c.CLI_DEPOSITORACCT,c.IFSC";*/
+					//get no of record in resultset
+							int size = 0;
+						if(rs.next())
+						{
+							rs.last();
+							size = rs.getRow();
+							rs.beforeFirst();
+						}
+
+						System.out.println("size:::>>>"+size);
+				//now get one by one record and generate RRF..
+
+					int counter=0;
+					String statusStr="";
+							if(size>0)
+							{//1
+
+							//this condition decide wheather return outward cheques and clearinginward cheques  having same count or not
+								if(returnOutwardRecCount==size)
+								{//1.1
+									while(rs.next())
+									{//2
+											totChq++;
+											String itemSeqNo=rs.getString(9);//c.ITEMSEQUENCENO
+											String payorBankRoutNo=rs.getString(3);//r.RTO_PAYORBANKROUTNO  new r.RTO_SORTCODE  
+											String amount=rs.getString(5);//r.AMOUNT
+											totAmt += getAmount(amount);
+											String accountNo=rs.getString(12);//Configuration.lPad(rs.getString(6),25,"0");//r.RTO_ACCOUNTNUMBER
+											String chequeNo=rs.getString(2);//r.CHEQUENO
+											String tranCode=""+Integer.parseInt(rs.getString(4));//r.RTO_TRANSACTIONCODE
+											tranCode=Configuration.lPad(tranCode, 2, "0");
+											String presentingBankRoutNo=rs.getString(13);//c.PresentingBankRoutNo
+											String presentmentDate=rs.getString(10);//c.presentmentDate
+											String cycleNo=rs.getString(11);//c.cycleNo
+											String clearingType=rs.getString(8);//c.CLEARINGTYPE
+											String retReasonCode=Configuration.lPad(""+Integer.parseInt(rs.getString(7)),2,"0");//c.RTO_RETURNREASONCODE
+											String BOFDRoutNo=rs.getString(14);//c.BOFDRoutNo
+											String BOFDBusDate=rs.getString(15);//c.BOFDBusDate
+											String depositorAcct=rs.getString(16);//c.depositorAcct
+											if(depositorAcct==null || depositorAcct==" ")
+												depositorAcct=" ";
+											String ifsc =rs.getString(17);//c.ifsc
+											String reasonComment=rs.getString(18);
+											String ClrSrNo=rs.getString(19);
+											//String signatureString=chequeNo+";"+payorBankRoutNo+";"+tranCode+";"+amount+";";
+											//String signatureData=Configuration.micrEncryptedData(signatureString);
+											//String signatureLength=Integer.toString(Configuration.dasLength);
+
+										//create xml tags
+
+
+											xtw.writeStartElement("Item");
+											xtw.writeAttribute("ItemSeqNo",itemSeqNo);
+											//MICR Data
+											//System.out.println("sortCode:"+sortCode);
+											/*if(sortCode.length()==0||Integer.parseInt(sortCode.trim())==0)
+											{
+
+												statusStr="PayorBankRoutNo must Not Zero";
+												System.out.println(statusStr);
+												break;
+
+
+											}
+											else*/
+											{
+												xtw.writeAttribute("PayorBankRoutNo",payorBankRoutNo);
+											}
+											System.out.println("amount:"+amount);
+										/*	if(amount.length()==0||Long.parseLong(amount.trim())==0)
+											{
+													statusStr="Amount must Not Zero";
+													System.out.println(statusStr);
+													break;
+											}
+											else*/
+											{
+												xtw.writeAttribute("Amount",Long.parseLong(amount)+"");
+											}
+											if(Configuration.getConfValByNm("CFG_CHI_BANKNAME",con).equalsIgnoreCase("AXIS"))
+											{
+												xtw.writeAttribute("AccountNo",Configuration.lPad(""+ Long.parseLong(accountNo), 7, "0"));
+											}
+											System.out.println("chequeNo:"+chequeNo);
+											/*if(chequeNo.length()==0||Integer.parseInt(chequeNo.trim())==0)
+											{
+													statusStr="Cheque must Not Be Zero";
+													System.out.println(statusStr);
+													break;
+											}
+											else*/
+											{
+												xtw.writeAttribute("SerialNo",chequeNo);
+											}
+											//Above Same As Per CXF
+											System.out.println("tranCode==="+Configuration.lPad(tranCode,2,"0"));
+											/*if(tranCode.length()==0||Integer.parseInt(tranCode.trim())==0)
+											{
+													statusStr="Transaction Code must Not Be Zero";
+													System.out.println(statusStr);
+													break;
+											}
+											else*/
+											{
+												xtw.writeAttribute("TransCode",tranCode);
+									
+											}
+											//MICR Data Ends Here...
+											System.out.println("presentingBankRoutNo:"+presentingBankRoutNo);
+											/*if(presentingBankRoutNo.length()==0||Integer.parseInt(presentingBankRoutNo.trim())==0)
+											{
+													statusStr="PresentingBankRoutNo Code must Not Be Zero";
+													System.out.println(statusStr);
+													break;
+											}
+											else*/
+											{
+													xtw.writeAttribute("PresentingBankRoutNo",presentingBankRoutNo);
+											}
+												System.out.println("cycleNo:"+cycleNo);
+												xtw.writeAttribute("PresentmentDate",presentmentDate);
+												/*if(cycleNo.length()==0||Integer.parseInt(cycleNo.trim())==0)
+												{
+														statusStr="CycleNo Code must Not Zero";
+														break;
+												}
+												else
+												{*/
+															xtw.writeAttribute("CycleNo",cycleNo);
+												//}
+												System.out.println("clearingType:"+clearingType);
+												/*if(clearingType.length()==0||Integer.parseInt(clearingType.trim())==0)
+												{
+														statusStr="ClearingType Code must Not Be Zero";
+														System.out.println(statusStr);
+														break;
+												}
+												else*/
+												{
+														xtw.writeAttribute("ClearingType",clearingType);
+												}
+
+											/*if(retReasonCode.length()==0||Integer.parseInt(retReasonCode.trim())==0)
+												{
+														statusStr="ReturnReason Code must Not Be Zero";
+														System.out.println(statusStr);
+														break;
+												}
+												else*/
+												{
+														System.out.println("return reason:"+Configuration.lPad(Integer.parseInt(retReasonCode)+"",2,"0"));
+														xtw.writeAttribute("ReturnReason",Configuration.lPad(Integer.parseInt(retReasonCode)+"",2,"0"));
+														if(retReasonCode.equalsIgnoreCase("88"))
+														{
+															xtw.writeAttribute("ReturnReasonComment",reasonComment.trim());
+														}
+												}
+												
+												
+											xtw.writeStartElement("AddendA");
+											xtw.writeAttribute("BOFDRoutNo",BOFDRoutNo);
+											xtw.writeAttribute("BOFDBusDate",BOFDBusDate);
+											//xtw.writeAttribute("DepositorAcct",depositorAcct); //optional
+											xtw.writeAttribute("IFSC",ifsc);
+											xtw.writeEndElement();//AddendA
+
+											if(Configuration.getConfValByNm("CFG_CHI_BANKNAME",con).equalsIgnoreCase("AXIS"))
+											{
+												//PrivateKey privateKey=new CtsSecurity(con).getPrivateKey();
+												//signatureParam = chqNo+sortCode+lPad(""+Long.parseLong(accNo),6,"0")+tranNo+amount
+												String MICRFingerPrint=chequeNo+";"+payorBankRoutNo+";"+ Configuration.lPad(""+ Long.parseLong(accountNo), 6, "0")+";"+tranCode+";"+Long.parseLong(amount)+";";
+												System.out.println("MICRFingerPrint=="+MICRFingerPrint.replaceAll(";",""));
+												String signatureData = Configuration.micrEncryptedData(MICRFingerPrint.replaceAll(";",""),
+														privateKey);
+												xtw.writeStartElement("MICRDS");
+												xtw.writeAttribute("Source","Drawee");
+												xtw.writeAttribute("DigitalSignatureMethod",digitalsignaturemethod);
+												xtw.writeAttribute("SecurityKeySize",securitykeysize);
+												xtw.writeAttribute("MICRFingerPrint",MICRFingerPrint);
+												xtw.writeAttribute("DigitalSignatureLength","344");//signatureLength
+												xtw.writeAttribute("SignatureData",signatureData);
+												xtw.writeAttribute("SecurityOriginatorName",securityoriginatorname.length()<16?securityoriginatorname:securityoriginatorname.substring(0,16));
+												xtw.writeAttribute("SecurityAuthenticatorName",securityauthenticatorname.length()<16?securityauthenticatorname:securityauthenticatorname.substring(0,16));
+												xtw.writeAttribute("SecurityKeyName",securitykeyname.length()<16?securitykeyname:securitykeyname.substring(0,16));
+												xtw.writeEndElement();
+											}
+											xtw.writeEndElement();//Item
+											System.out.println("deepu11-----"+str_RRF_name+"=="+chequeNo+"=="+payorBankRoutNo+"=="+Configuration.lPad(tranCode,3,"0")+"=="+amount+"=="+clearingType+"=="+itemSeqNo+"=="+ClrSrNo);
+											psUpdate.setString(1,str_RRF_name);
+											psUpdate.setString(2,tranCode);
+											psUpdate.setString(3,ClrSrNo);
+											
+											//psUpdate.setString(3,payorBankRoutNo);
+											//psUpdate.setString(4,Configuration.lPad(tranCode,3,"0"));
+											//psUpdate.setString(5,amount);
+											//psUpdate.setString(6,clearingType);
+											psUpdate.executeUpdate();
+											counter++;
+											//NOTE: change the status of returnoutward and clearing inward table(still pending)
+									}//2
+
+								xtw.writeStartElement("FileSummary");
+								xtw.writeAttribute("TotalItemCount",Integer.toString(totChq));
+								xtw.writeAttribute("TotalAmount",Long.toString(totAmt));
+								xtw.writeEndElement();//FileSummary
+								//System.out.println("** 19 **");
+								xtw.writeEndElement();//FileHeader Ends Here
+								xtw.writeEndDocument();
+								xtw.flush();
+								xtw.close();
+								fos.flush();
+								fos.close();
+							}//1.1
+							else
+							{//1.1
+									retVal="\n\t Clearing Inward and Return Outward Cheques Count Not Match.#";
+									System.out.println(""+retVal);
+							}//1.1
+								if(counter==size)
+								{//2
+									retVal="SUCCESS#";
+									PrintWriter pw=new PrintWriter (path_rrf+RRF_done_name);
+									pw.flush();
+									pw.close();//DSP
+									System.out.println("Done..."+retVal);
+								}//2
+								else if(statusStr.equalsIgnoreCase("PayorBankRoutNo must Not Zero"))
+								{//2
+										retVal="PayorBankRoutNo must Not be Zero";
+										new File(path_rrf+RRF_done_name).delete();
+								}//2
+								else if(statusStr.equalsIgnoreCase("Amount must Not Zero"))
+								{//2
+										retVal="Amount must Not be Zero";
+										new File(path_rrf+RRF_done_name).delete();
+								}//2
+								else if(statusStr.equalsIgnoreCase("Cheque must Not Zero"))
+								{//2
+										retVal="Cheque must Not be Zero";
+										new File(path_rrf+RRF_done_name).delete();
+								}//2statusStr="Cheque must Not Zero";
+								else if(statusStr.equalsIgnoreCase("Transaction Code must Not Zero"))
+								{//2
+										retVal="Transaction Code must Not be Zero";
+										new File(path_rrf+RRF_done_name).delete();
+								}//2statusStr="Transaction Code must Not Zero";
+								else if(statusStr.equalsIgnoreCase("PresentingBankRoutNo Code must Not Zero"))
+								{//2
+										retVal="PresentingBankRoutNo Code must Not be Zero";
+										new File(path_rrf+RRF_done_name).delete();
+								}//2
+								else if(statusStr.equalsIgnoreCase("CycleNo Code must Not Zero"))
+								{//2
+										retVal="CycleNo Code must Not be Zero";
+										new File(path_rrf+RRF_done_name).delete();
+								}//2
+								else if(statusStr.equalsIgnoreCase("ClearingType Code must Not Zero"))
+								{//2
+										retVal="ClearingType Code must Not be Zero";
+										new File(path_rrf+RRF_done_name).delete();
+								}//2
+								else if(statusStr.equalsIgnoreCase("ReturnReason Code must Not Zero"))
+								{//2
+										retVal="ReturnReason Code must Not be Zero";
+										new File(path_rrf+RRF_done_name).delete();
+								}//2
+								/*else
+								{//2
+										retVal="No return outward Cheque#";
+										new File(path_rrf+RRF_name).delete();
+								}//2*/
+
+						}//1
+						else
+						{//1
+								retVal="No return outward Cheque#";
+						}//1
+				}//try
+				catch (XMLStreamException e)
+				{
+				  System.out.println("\nXMLStreamException in Engine.generateRRF():"+e.getMessage());
+				  retVal="FAIL1#";
+				}
+				catch (IOException ie)
+				{
+				  System.out.println("\nIOException in Engine.generateRRF():"+ie.getMessage());
+				  retVal="FAIL2#";
+				}
+				catch (Exception ie)
+				{
+					ie.printStackTrace();
+				  System.out.println("\nException in Engine.generateRRF():"+ie.getMessage());
+				  retVal="FAIL3#";
+				}
+				finally
+				{
+					try
+					{
+				  if (xtw != null)
+					  	xtw.close();
+				  if(rs!=null)
+					  	rs.close();
+				  if(psInsert!=null)
+					  psInsert.close(); 
+				  
+				  /*if(con!=null )
+					  con.close();*/
+				  if(psUpdate==null)
+					  psRO.close();
+				  	psUpdate.close();
+					}
+					catch(Exception e)
+					{
+						}
+				}
+				System.out.println("Exit from generateRRF ..."+retVal);
+				return retVal;
+	}//generateRRF
+
+	public String generateRET()
+	{
+
+		System.out.println("*** inside generateRET *****");
+		String retVal="";
+		String singleRecord="";
+
+		String RET_name= GetFileName.getReturnFileName_HDFC("",con);
+		String[] strArr=RET_name.split("_");
+		String creationDate=strArr[2];
+		String creationTime=strArr[3];
+ 		File strFile = new File(Configuration.getConfValByNm("CFG_uploadpath_to_chi",con)+"/"+RET_name);
+ 		boolean fileCreated ;
+ 		//File appending
+ 		Writer objWriter=null ;
+ 		 PrintWriter pw1=null;
+
+		String str_RET_name=RET_name;
+		String RET_done_name=RET_name+".done";
+		String fileId=RET_name.substring(RET_name.lastIndexOf("_")+1,RET_name.lastIndexOf("."));
+
+		long totAmt = 0;
+		int totChq = 0;
+		PreparedStatement psInsert=null;
+		PreparedStatement psUpdate=null;
+		PreparedStatement psexecute=null;
+		PreparedStatement psRO=null;
+		ResultSet rs=null,rs_count=null;
+		FileOutputStream fos=null;
+		//Connection con=null;
+
+		int returnOutwardRecCount=0;
+		try
+		{
+				fileCreated = strFile.createNewFile();
+				fos=new FileOutputStream(strFile);
+				pw1 = new PrintWriter(fos);
+
+				//con=Configuration.getConnection();
+				psRO=con.prepareStatement("select count(*) from RETRUNOUTWARD where RTO_DDMMYYYY=? and RTO_STATUS='Y'");
+				psRO.setString(1,Configuration.getDDMMYYYY());
+				rs_count=psRO.executeQuery();
+				while(rs_count.next())
+				{
+					returnOutwardRecCount=rs_count.getInt(1);
+				}
+				System.out.println("\n\t returnOutwardRecCount:"+returnOutwardRecCount);
+				//psInsert=con.prepareStatement("Insert into RETRUNOUTWARD values(?,?,?,?,?,?,?,?,?)");
+				psUpdate=con.prepareStatement("Update RETRUNOUTWARD set RTO_STATUS='D',RTO_XMLFILENAME='"+str_RET_name+"' where RTO_DDMMYYYY='"+Configuration.getDDMMYYYY()+"' and RTO_CHEQUENO=? and RTO_PAYORBANKROUTNO=? and to_number(RTO_TRANSACTIONCODE)=to_number(?) and to_number(RTO_AMOUNT)=? and RTO_CLEARINGTYPE=? and RTO_STATUS='Y'");
+				String rec = "";
+				Statement st=con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
+
+				String sql="Select r.RTO_BOFD,r.RTO_CHEQUENO,r.RTO_PAYORBANKROUTNO,";
+				sql=sql+ "r.RTO_SORTCODE,r.RTO_TRANSACTIONCODE,r.RTO_AMOUNT,r.RTO_ACCOUNTNUMBER,r.RTO_RETURNREASONCODE,";
+				sql=sql+" c.CLI_CLEARINGTYPE,c.CLI_ITEMSEQUENCENO,c.CLI_PRESENTMENTDATE,c.CLI_CYCLENO,";
+				sql=sql+"c.CLI_ACCOUNTNO,c.CLI_PRESENTINGBANKROUTNO,c.CLI_BOFDRoutNo,c.CLI_BOFDBUSDATE,";
+				sql=sql+ "c.CLI_DEPOSITORACCT,c.CLI_IFSC,C.CLI_INSTRUMENT_ID";
+				sql=sql+" from RETRUNOUTWARD r, CLEARINGINWARD c";
+				sql=sql+" where r.RTO_STATUS='Y'";
+				sql=sql+" and r.RTO_DDMMYYYY=to_char((select max(to_date(c.CLI_DDMMYYYY,'ddmmyyyy')) ";
+				sql=sql+" from CLEARINGINWARD CL WHERE CL.CLI_SERIALNO=c.CLI_SERIALNO AND ";
+				sql=sql+" c.CLI_PAYORBANKROUTNO=CL.CLI_PAYORBANKROUTNO AND c.CLI_CLEARINGTYPE";
+				sql=sql+" =CL.CLI_CLEARINGTYPE and c.CLI_TRANSCODE=CL.CLI_TRANSCODE  ";
+				sql=sql+" and c.CLI_AMOUNT = CL.CLI_AMOUNT  ),'ddmmyyyy') ";
+				sql=sql+" and r.RTO_DDMMYYYY='"+Configuration.getDDMMYYYY()+"'";
+				sql=sql+" and r.RTO_CHEQUENO=c.CLI_SERIALNO";
+				sql=sql+" and r.RTO_PAYORBANKROUTNO=c.CLI_PAYORBANKROUTNO";
+				sql=sql+" and r.RTO_CLEARINGTYPE=c.CLI_CLEARINGTYPE ";
+				sql=sql+" and to_number(r.RTO_TRANSACTIONCODE)=to_number(c.CLI_TRANSCODE)  ";
+				sql=sql+" and to_number(r.RTO_AMOUNT)=to_number(c.CLI_AMOUNT)";
+				//sql=sql+" and r.RTO_ITEMSEQUENCENO=c.CLI_ITEMSEQUENCENO";
+				sql=sql+" and nvl(rtrim(ltrim(r.RTO_ITEMSEQUENCENO)),c.CLI_CLRSRNO)=c.CLI_CLRSRNO";//CLI_ITEMSEQUENCENO
+
+				System.out.println("sql:"+sql);
+				rs=st.executeQuery(sql);
+				//xof =  XMLOutputFactory.newInstance();
+				String micrFile=RET_name;
+				//path where to generaete RRF.xml
+				String path_ret= Configuration.getConfValByNm("CFG_uploadpath_to_chi",con);
+
+
+					//get no of record in resultset
+							int size = 0;
+						if(rs.next())
+						{
+							rs.last();
+							size = rs.getRow();
+							rs.beforeFirst();
+						}
+
+						System.out.println("size:::>>>"+size);
+				//now get one by one record and generate RET..
+
+					int counter=0;
+					String statusStr="";
+					if(size>0)
+					{//1
+						//this condition decide wheather return outward cheques and clearinginward cheques  having same count or not
+						if(returnOutwardRecCount==size)
+						{//1.1
+							while(rs.next())
+							{//2
+								totChq++;
+								String itemSeqNo=rs.getString(9);//c.ITEMSEQUENCENO
+								String payorBankRoutNo=rs.getString(3);//r.RTO_SORTCODE
+								String amount=rs.getString(6);//r.AMOUNT
+								totAmt += getAmount(amount);
+								String accountNo=rs.getString(7);				//Configuration.lPad(rs.getString(6),25,"0");//r.RTO_ACCOUNTNUMBER
+								String chequeNo=rs.getString(2);//r.CHEQUENO
+								String tranCode=""+Integer.parseInt(rs.getString(5));//r.RTO_TRANSACTIONCODE
+								String presentingBankRoutNo=rs.getString(14);//c.PresentingBankRoutNo
+								String presentmentDate=rs.getString(11);//c.presentmentDate
+								String cycleNo=rs.getString(12);//c.cycleNo
+								String clearingType=rs.getString(9);//c.CLEARINGTYPE
+								String retReasonCode=Configuration.lPad(""+Integer.parseInt(rs.getString(8)),2,"0");//c.RTO_RETURNREASONCODE
+								String BOFDRoutNo=rs.getString(15);//c.BOFDRoutNo
+								String BOFDBusDate=rs.getString(16);//c.BOFDBusDate
+								String depositorAcct=rs.getString(17);//c.depositorAcct
+								if(depositorAcct==null || depositorAcct==" ")
+									depositorAcct=" ";
+								String ifsc =rs.getString(18);//c.ifsc
+								String instrumentId=rs.getString(19);//c.CLI_INSTRUMENT_ID
+
+								singleRecord=payorBankRoutNo+"|"+chequeNo+"|"+amount+"|"+presentmentDate+"|"+Configuration.lPad(Integer.parseInt(retReasonCode)+"",2,"0")+"|"+instrumentId;
+
+								pw1.println(singleRecord);
+								pw1.flush();
+
+								//System.out.println("amount:"+amount);
+
+								System.out.println("chequeNo:"+chequeNo);
+
+								System.out.println("tranCode:"+tranCode);
+								System.out.println("tranCode:"+payorBankRoutNo);
+
+								//System.out.println("presentingBankRoutNo:"+presentingBankRoutNo);
+								//System.out.println("cycleNo:"+cycleNo);
+								//System.out.println("clearingType:"+clearingType);
+								//System.out.println("return reason:"+Configuration.lPad(Integer.parseInt(retReasonCode)+"",3,"0"));
+
+								//psUpdate.setString(1,str_RET_name);
+								psUpdate.setString(1,chequeNo);
+								psUpdate.setString(2,payorBankRoutNo);
+								psUpdate.setString(3,Configuration.lPad(tranCode,3,"0"));
+								psUpdate.setString(4,amount);
+								psUpdate.setString(5,clearingType);
+								psUpdate.executeUpdate();
+								counter++;
+							}//2
+						pw1.close();
+						fos.flush();
+						fos.close();
+					}//1.1
+					else
+					{//1.1
+						retVal="\n\t Clearing Inward and Return Outward Cheques Count Not Match.#";
+						System.out.println(""+retVal);
+					}//1.1
+					if(counter==size)
+					{//2
+						retVal="SUCCESS#";
+						PrintWriter pw=new PrintWriter (path_ret+RET_done_name);
+						pw.flush();
+						pw.close();//DSP
+						System.out.println("Done..."+retVal);
+					}//2
+					else if(statusStr.equalsIgnoreCase("PayorBankRoutNo must Not Zero"))
+					{//2
+						retVal="PayorBankRoutNo must Not be Zero";
+						new File(path_ret+RET_done_name).delete();
+					}//2
+					else if(statusStr.equalsIgnoreCase("Amount must Not Zero"))
+					{//2
+						retVal="Amount must Not be Zero";
+						new File(path_ret+RET_done_name).delete();
+					}//2
+					else if(statusStr.equalsIgnoreCase("Cheque must Not Zero"))
+					{//2
+						retVal="Cheque must Not be Zero";
+						new File(path_ret+RET_done_name).delete();
+					}//2statusStr="Cheque must Not Zero";
+					else if(statusStr.equalsIgnoreCase("Transaction Code must Not Zero"))
+					{//2
+						retVal="Transaction Code must Not be Zero";
+						new File(path_ret+RET_done_name).delete();
+					}//2statusStr="Transaction Code must Not Zero";
+					else if(statusStr.equalsIgnoreCase("PresentingBankRoutNo Code must Not Zero"))
+					{//2
+						retVal="PresentingBankRoutNo Code must Not be Zero";
+						new File(path_ret+RET_done_name).delete();
+					}//2
+					else if(statusStr.equalsIgnoreCase("CycleNo Code must Not Zero"))
+					{//2
+						retVal="CycleNo Code must Not be Zero";
+						new File(path_ret+RET_done_name).delete();
+					}//2
+					else if(statusStr.equalsIgnoreCase("ClearingType Code must Not Zero"))
+					{//2
+						retVal="ClearingType Code must Not be Zero";
+						new File(path_ret+RET_done_name).delete();
+					}//2
+					else if(statusStr.equalsIgnoreCase("ReturnReason Code must Not Zero"))
+					{//2
+						retVal="ReturnReason Code must Not be Zero";
+						new File(path_ret+RET_done_name).delete();
+					}//2
+				}//1
+				else
+				{//1
+					retVal="No return outward Cheque#";
+				}//1
+			}//try
+			catch (IOException ie)
+			{
+				System.out.println("\nIOException in Engine.generateRET():"+ie.getMessage());
+				retVal="FAIL2#";
+			}
+			catch (Exception ie)
+			{
+				ie.printStackTrace();
+			  	System.out.println("\nException in Engine.generateRET():"+ie.getMessage());
+			  	retVal="FAIL3#";
+			}
+			finally
+			{
+				if (rs!=null && psInsert!=null && con!=null && psUpdate==null && pw1!=null)
+			  	{
+					try
+					{
+						pw1.close();
+						fos.close();
+						rs.close();
+						psInsert.close();
+						psUpdate.close();
+						psRO.close();
+						//con.close();
+					}
+					catch(Exception e)
+					{
+					}
+				}
+			}
+			System.out.println("Exit from generateRET ..."+retVal);
+			return retVal;
+	}//generateRET
+	/////////////////////////////////////////////Generate ERF///////////////////////////////////////////////
+	public boolean readAndInsertExtensionRequestTextFile()
+		{
+				System.out.println("\n\t inside Engine.readAndInsertExtensionRequestTextFile() =====");
+				boolean flg=false;
+				PreparedStatement psInsert=null;
+				//Connection con=null;
+				int recCount=0;
+			try
+			{
+						String rec = "";
+						String path=Configuration.getConfValByNm("CFG_uploadpath_to_chi",con)+"ExtensionRequest/";;
+						String BOFD ="";
+						String chequeNo ="";
+						String sortCode ="";
+						String tranCode ="";
+						String amount ="";
+						String accountNo ="";
+						String retReasonCode ="";
+						String payorbankroutNo="";
+						String seq_uniqueNo="";
+						String clearingType="";
+						String period="";
+						//con=Configuration.getConnection();
+						//psInsert=con.prepareStatement("Insert into EXTENSION_OUTWARD values(?,?,?,?,?,?,?,?,?,?,?)");
+						psInsert=con.prepareStatement("Insert into EXTENSION_OUTWARD(EXT_PRESENTINGBANKROUTNO,EXT_SERIALNO,EXT_PAYORBANKROUTNO,EXT_TRANSCODE,EXT_AMOUNT,EXT_ACCOUNTNO,EXT_EXTENSIONREASONCODE,EXT_EXTENSIONPERIOD,EXT_STATUS,EXT_DDMMYYYY) values(?,?,?,?,?,?,?,?,?,?)");
+						BufferedReader br = new BufferedReader(new FileReader(path+"From_CBS_Extension_Request.txt"));
+
+						while ((rec = br.readLine()) != null)
+						{//1
+									recCount++;
+									BOFD =rec.substring(0,9);
+									chequeNo =rec.substring(9,15);
+									sortCode = rec.substring(15,24);
+									tranCode = ""+Integer.parseInt(rec.substring(24,27));
+									amount = rec.substring(27,45);//Amount
+									accountNo = rec.substring(45,60);//Account No
+									//accountNo = rec.substring(61,70);//Account No
+									retReasonCode = rec.substring(60,62);//Ret Reason Code NOTE: 3 digits provided from CBS
+									period=rec.substring(62,65);
+									//payorbankroutNo= sortCode;//rec.substring(62,71);this change is done in CBS...
+									payorbankroutNo=rec.substring(65,74);
+									//seq_uniqueNo=rec.substring(62,77);//unique no 15 digits
+									clearingType=rec.substring(74,76);
+									psInsert.setString(1,BOFD);
+									psInsert.setString(2,chequeNo);
+									psInsert.setString(3,sortCode);
+									psInsert.setString(4,tranCode);
+									psInsert.setString(5,amount);
+									psInsert.setString(6,accountNo);
+									psInsert.setString(7,retReasonCode);
+									psInsert.setString(8,""+Integer.parseInt(period));
+									psInsert.setString(9,"Y");
+									//psInsert.setString(10,payorbankroutNo);
+									//psInsert.setString(10,seq_uniqueNo);//RTO_UNIQUENO
+									psInsert.setString(10,Configuration.getDDMMYYYY());//RTO_DDMMYYYY chage it's index to 11
+									//psInsert.setString(12,clearingType);
+
+									try
+									{
+										int result=psInsert.executeUpdate();
+											if(result>0)
+												System.out.println("record is inserted..");
+									}
+									catch(SQLException e)
+									{
+											if(!(e.getMessage().indexOf("ORA-00001")>-1))
+											{
+												System.out.println(""+e);
+												throw new Exception("Exception in Engine.readAndInsertExtensionRequestTextFile()");
+											}
+									}
+
+						}//1
+						br.close();
+						/*if(recCount==0)
+						{
+							err_status="No record present in From_CBS_Extension_Request.txt";
+						}
+						else
+						{
+							flg=true;
+						}*/
+						if(recCount>0)
+						{
+								//err_status="No record present in From_CBS_Extension_Request.txt";
+								new File(path+"From_CBS_Extension_Request.txt").delete();
+						}
+			}
+			catch(FileNotFoundException e)
+			{
+					System.out.println("\n\tFileNotFoundException in Engine.readAndInsertExtensionRequestTextFile()"+e);
+					if(e.getMessage().contains("FileNotFoundException"))
+					{
+						err_status="From_CBS_Extension_Request.txt is file not available on upload path.";
+					}
+					if(recCount==0)
+					{
+						err_status="No record present in From_CBS_Extension_Request.txt.";
+					}
+			}
+			catch(StringIndexOutOfBoundsException e)
+			{
+						System.out.println("\n\tStringIndexOutOfBound in Engine.readAndInsertExtensionRequestTextFile()"+e);
+						err_status="From_CBS_Extension_Request.txt file is Not in Proper format.";
+
+			}
+			catch(SQLException e)
+			{
+					System.out.println("\n\tSQLException in Engine.readAndInsertExtensionRequestTextFile()"+e);
+					err_status="Problem at inserting record to ExtensionRequest Table.";
+			}
+			catch(Exception e)
+			{
+					System.out.println("\n\tException in Engine.readAndInsertExtensionRequestTextFile()"+e);
+					err_status="Fail";
+					e.printStackTrace();
+			}
+			/*finally
+			{
+					if(psInsert!=null && con!=null)
+						{
+								try
+								{
+									psInsert.close();
+									con.close();
+								}catch(SQLException e){}
+						}
+			}*/
+			System.out.println("\n\texit from  Engine.readAndInsertExtensionRequestTextFile()====>>>"+flg);
+			//return flg;
+			return true;
+	}//end readAndInsertExtensionRequestTextFile
+
+	public String generateERF()
+			{
+						//ERF_416402000_10052014_125837_03
+						System.out.println("*** inside generateERF *****");
+						String retVal="";
+						String ERF_name= GetFileName.getExtensionFileName("ERF",con);
+						String[] strArr=ERF_name.split("_");
+						String creationDate=strArr[2];
+						String creationTime=strArr[3];
+
+						String str_ERF_name=ERF_name;
+						String ERF_done_name=ERF_name+".done";
+						String fileId=ERF_name.substring(ERF_name.lastIndexOf("_")+1,ERF_name.lastIndexOf("."));
+						XMLOutputFactory xof =  null;
+						XMLStreamWriter xtw = null;
+
+
+						FileOutputStream fos=null;
+						long totAmt = 0;
+						int totChq = 0;
+						PreparedStatement psInsert=null;
+						PreparedStatement psUpdate=null;
+						PreparedStatement psexecute=null;
+						PreparedStatement psRO=null;
+						ResultSet rs=null,rs_count=null;
+						//Connection con=null;
+
+						int ExtensionRequestRecCount=0;
+						try
+						{
+							String path=Configuration.getConfValByNm("CFG_uploadpath_to_chi",con)+"ExtensionRequest/";
+							//con=Configuration.getConnection();
+							psRO=con.prepareStatement("select count(*) from EXTENSION_OUTWARD where EXT_DDMMYYYY=? and EXT_STATUS='Y'");
+							psRO.setString(1,Configuration.getDDMMYYYY());
+							rs_count=psRO.executeQuery();
+							while(rs_count.next())
+							{
+								 	ExtensionRequestRecCount=rs_count.getInt(1);
+							}
+							System.out.println("\n\t ExtensionRequestRecCount:"+ExtensionRequestRecCount);
+							//psInsert=con.prepareStatement("Insert into EXTENSION_OUTWARD values(?,?,?,?,?,?,?,?,?)");
+							psUpdate=con.prepareStatement("Update EXTENSION_OUTWARD set EXT_STATUS='D',EXT_FILENAME=? where EXT_PAYORBANKROUTNO=?");
+							String rec = "";
+							Statement st=con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
+
+							String sql="Select e.EXT_PRESENTINGBANKROUTNO,e.EXT_SERIALNO,e.EXT_PAYORBANKROUTNO,e.EXT_TRANSCODE,e.EXT_AMOUNT,";
+							sql=sql+" e.EXT_ACCOUNTNO,e.EXT_EXTENSIONREASONCODE,c.CLI_CLEARINGTYPE,c.CLI_ITEMSEQUENCENO,c.CLI_PRESENTMENTDATE,";
+							sql=sql+" c.CLI_CYCLENO,c.CLI_ACCOUNTNO,c.CLI_PRESENTINGBANKROUTNO,c.CLI_BOFDRoutNo,c.CLI_BOFDBUSDATE,";
+							sql=sql+" c.CLI_DEPOSITORACCT,c.CLI_IFSC,e.EXT_EXTENSIONPERIOD from EXTENSION_OUTWARD e, CLEARINGINWARD c  where e.EXT_STATUS='Y'";
+							sql=sql+" and e.EXT_DDMMYYYY=to_char((select max(to_date(c.CLI_DDMMYYYY,'ddmmyyyy')) from CLEARINGINWARD CL ";
+							sql=sql+" WHERE CL.CLI_SERIALNO=c.CLI_SERIALNO AND c.CLI_PAYORBANKROUTNO=CL.CLI_PAYORBANKROUTNO AND ";
+							sql=sql+" c.CLI_CLEARINGTYPE=CL.CLI_CLEARINGTYPE and c.CLI_TRANSCODE=CL.CLI_TRANSCODE  and c.CLI_AMOUNT = ";
+							sql=sql+" CL.CLI_AMOUNT  ),'ddmmyyyy')  and e.EXT_DDMMYYYY='"+Configuration.getDDMMYYYY()+"' and e.EXT_SERIALNO=c.CLI_SERIALNO";
+							sql=sql+" and e.EXT_PAYORBANKROUTNO=c.CLI_PAYORBANKROUTNO and e.EXT_CLEARINGTYPE=c.CLI_CLEARINGTYPE ";
+							sql=sql+" and e.EXT_TRANSCODE=c.CLI_TRANSCODE  and to_number(e.EXT_AMOUNT)=to_number(c.CLI_AMOUNT )";
+
+							System.out.println("sql:"+sql);
+							rs=st.executeQuery(sql);
+							xof =  XMLOutputFactory.newInstance();
+							String micrFile=ERF_name;
+							//path where to generaete ERF.xml
+							String path_ERF= Configuration.getConfValByNm("CFG_uploadpath_to_chi",con);
+							fos=new FileOutputStream(path_ERF+ERF_name);
+							Writer writer = new OutputStreamWriter(fos, "UTF-8");
+							xtw = xof.createXMLStreamWriter(writer);
+
+							xtw.writeStartDocument("UTF-8","1.0");
+							xtw.writeStartElement("FileHeader");
+							xtw.writeAttribute("xmlns","urn:schemas-ncr-com:ECPIX:ERF:FileStructure:010003");
+							xtw.writeAttribute("VersionNumber",versionnumber);
+							xtw.writeAttribute("TestFileIndicator","P");// it must be P
+							xtw.writeAttribute("CreationDate",creationDate);
+							xtw.writeAttribute("CreationTime",creationTime);
+							xtw.writeAttribute("FileID",fileId);//decide the FileID
+						//get no of record in resultset
+							int size = 0;
+							if(rs.next())
+							{
+								rs.last();
+								size = rs.getRow();
+								rs.beforeFirst();
+							}
+
+							System.out.println("size:::>>>"+size);
+					//now get one by one record and generate ERF..
+
+						int counter=0;
+						String statusStr="";
+								if(size>0)
+								{//1
+
+								//this condition decide wheather return outward cheques and clearinginward cheques  having same count or not
+									if(ExtensionRequestRecCount==size)
+									{//1.1
+										while(rs.next())
+										{//2
+												totChq++;
+												String itemSeqNo=rs.getString(9);
+												String payorBankRoutNo=rs.getString(3);
+												String amount=rs.getString(5);
+												totAmt += getAmount(amount);
+												String accountNo=rs.getString(6);//Configuration.lPad(rs.getString(6),25,"0");
+												String chequeNo=rs.getString(2);
+												String tranCode=""+Integer.parseInt(rs.getString(4));
+												String presentingBankRoutNo=rs.getString(13);
+												String presentmentDate=rs.getString(10);
+												String cycleNo=rs.getString(11);
+												String clearingType=rs.getString(8);
+												String retReasonCode=Configuration.lPad(""+Integer.parseInt(rs.getString(7)),2,"0");
+												String BOFDRoutNo=rs.getString(14);
+												String BOFDBusDate=rs.getString(15);
+												String depositorAcct=rs.getString(16);
+												if(depositorAcct==null || depositorAcct==" ")
+													depositorAcct=" ";
+												String ifsc =rs.getString(17);//c.ifsc
+												String extensionperiod=rs.getString(18);
+												//String signatureString=chequeNo+";"+payorBankRoutNo+";"+tranCode+";"+amount+";";
+												//String signatureData=Configuration.micrEncryptedData(signatureString);
+												//String signatureLength=Integer.toString(Configuration.dasLength);
+
+											//create xml tags
+
+
+												xtw.writeStartElement("Item");
+												xtw.writeAttribute("ItemSeqNo",itemSeqNo);
+												//MICR Data
+												//System.out.println("sortCode:"+sortCode);
+												/*if(sortCode.length()==0||Integer.parseInt(sortCode.trim())==0)
+												{
+
+													statusStr="PayorBankRoutNo must Not Zero";
+													System.out.println(statusStr);
+													break;
+
+
+												}
+												else*/
+												{
+													xtw.writeAttribute("PayorBankRoutNo",payorBankRoutNo);
+												}
+												System.out.println("amount:"+amount);
+											/*	if(amount.length()==0||Long.parseLong(amount.trim())==0)
+												{
+														statusStr="Amount must Not Zero";
+														System.out.println(statusStr);
+														break;
+												}
+												else*/
+												{
+													xtw.writeAttribute("Amount",Long.parseLong(amount)+"");
+												}
+												//xtw.writeAttribute("AccountNo",accountNo);
+												System.out.println("chequeNo:"+chequeNo);
+												/*if(chequeNo.length()==0||Integer.parseInt(chequeNo.trim())==0)
+												{
+														statusStr="Cheque must Not Be Zero";
+														System.out.println(statusStr);
+														break;
+												}
+												else*/
+												{
+													xtw.writeAttribute("SerialNo",chequeNo);
+												}
+												//Above Same As Per CXF
+												System.out.println("tranCode:"+tranCode);
+												/*if(tranCode.length()==0||Integer.parseInt(tranCode.trim())==0)
+												{
+														statusStr="Transaction Code must Not Be Zero";
+														System.out.println(statusStr);
+														break;
+												}
+												else*/
+												{
+													xtw.writeAttribute("TransCode",tranCode);
+												}
+												//MICR Data Ends Here...
+												System.out.println("presentingBankRoutNo:"+presentingBankRoutNo);
+												/*if(presentingBankRoutNo.length()==0||Integer.parseInt(presentingBankRoutNo.trim())==0)
+												{
+														statusStr="PresentingBankRoutNo Code must Not Be Zero";
+														System.out.println(statusStr);
+														break;
+												}
+												else*/
+												{
+														xtw.writeAttribute("PresentingBankRoutNo",presentingBankRoutNo);
+												}
+													System.out.println("cycleNo:"+cycleNo);
+													xtw.writeAttribute("PresentmentDate",presentmentDate);
+													/*if(cycleNo.length()==0||Integer.parseInt(cycleNo.trim())==0)
+													{
+															statusStr="CycleNo Code must Not Zero";
+															break;
+													}
+													else
+													{*/
+																xtw.writeAttribute("CycleNo",cycleNo);
+													//}
+													System.out.println("clearingType:"+clearingType);
+													/*if(clearingType.length()==0||Integer.parseInt(clearingType.trim())==0)
+													{
+															statusStr="ClearingType Code must Not Be Zero";
+															System.out.println(statusStr);
+															break;
+													}
+													else
+													{
+															xtw.writeAttribute("ClearingType",clearingType);
+													}*/
+
+												/*if(retReasonCode.length()==0||Integer.parseInt(retReasonCode.trim())==0)
+													{
+															statusStr="ReturnReason Code must Not Be Zero";
+															System.out.println(statusStr);
+															break;
+													}
+													else*/
+													{
+															System.out.println("return reason:"+Configuration.lPad(Integer.parseInt(retReasonCode)+"",2,"0"));
+															xtw.writeAttribute("ExtensionReason",Configuration.lPad(Integer.parseInt(retReasonCode)+"",2,"0"));
+															xtw.writeAttribute("ExtensionPeriod",extensionperiod);
+
+													}
+
+
+												xtw.writeEndElement();//Item
+												psUpdate.setString(1,str_ERF_name);
+												psUpdate.setString(2,payorBankRoutNo);
+												psUpdate.executeUpdate();
+												counter++;
+												//NOTE: change the status of ExtensionRequest and clearing inward table(still pending)
+										}//2
+
+									xtw.writeStartElement("FileSummary");
+									xtw.writeAttribute("TotalItemCount",Integer.toString(totChq));
+									xtw.writeAttribute("TotalAmount",Long.toString(totAmt));
+									xtw.writeEndElement();//FileSummary
+									//System.out.println("** 19 **");
+									xtw.writeEndElement();//FileHeader Ends Here
+									xtw.writeEndDocument();
+									xtw.flush();
+									xtw.close();
+									fos.flush();
+									fos.close();
+								}//1.1
+								else
+								{//1.1
+										retVal="\n\t Clearing Inward and Return Outward Cheques Count Not Match.#";
+										System.out.println(""+retVal);
+								}//1.1
+									if(counter==size)
+									{//2
+										retVal="SUCCESS#";
+										PrintWriter pw=new PrintWriter (path_ERF+ERF_done_name);
+										pw.flush();
+										pw.close();//DSP
+										System.out.println("Done..."+retVal);
+									}//2
+									else if(statusStr.equalsIgnoreCase("PayorBankRoutNo must Not Zero"))
+									{//2
+											retVal="PayorBankRoutNo must Not be Zero";
+											new File(path_ERF+ERF_done_name).delete();
+									}//2
+									else if(statusStr.equalsIgnoreCase("Amount must Not Zero"))
+									{//2
+											retVal="Amount must Not be Zero";
+											new File(path_ERF+ERF_done_name).delete();
+									}//2
+									else if(statusStr.equalsIgnoreCase("Cheque must Not Zero"))
+									{//2
+											retVal="Cheque must Not be Zero";
+											new File(path_ERF+ERF_done_name).delete();
+									}//2statusStr="Cheque must Not Zero";
+									else if(statusStr.equalsIgnoreCase("Transaction Code must Not Zero"))
+									{//2
+											retVal="Transaction Code must Not be Zero";
+											new File(path_ERF+ERF_done_name).delete();
+									}//2statusStr="Transaction Code must Not Zero";
+									else if(statusStr.equalsIgnoreCase("PresentingBankRoutNo Code must Not Zero"))
+									{//2
+											retVal="PresentingBankRoutNo Code must Not be Zero";
+											new File(path_ERF+ERF_done_name).delete();
+									}//2
+									else if(statusStr.equalsIgnoreCase("CycleNo Code must Not Zero"))
+									{//2
+											retVal="CycleNo Code must Not be Zero";
+											new File(path_ERF+ERF_done_name).delete();
+									}//2
+									else if(statusStr.equalsIgnoreCase("ClearingType Code must Not Zero"))
+									{//2
+											retVal="ClearingType Code must Not be Zero";
+											new File(path_ERF+ERF_done_name).delete();
+									}//2
+									else if(statusStr.equalsIgnoreCase("ReturnReason Code must Not Zero"))
+									{//2
+											retVal="ReturnReason Code must Not be Zero";
+											new File(path_ERF+ERF_done_name).delete();
+									}//2
+									/*else
+									{//2
+											retVal="No return outward Cheque#";
+											new File(path_ERF+ERF_name).delete();
+									}//2*/
+
+							}//1
+							else
+							{//1
+									retVal="No return outward Cheque#";
+							}//1
+					}//try
+					catch (XMLStreamException e)
+					{
+					  System.out.println("\nXMLStreamException in Engine.generateERF():"+e.getMessage());
+					  retVal="FAIL1#";
+					}
+					catch (IOException ie)
+					{
+					  System.out.println("\nIOException in Engine.generateERF():"+ie.getMessage());
+					  retVal="FAIL2#";
+					}
+					catch (Exception ie)
+					{
+						ie.printStackTrace();
+					  System.out.println("\nException in Engine.generateERF():"+ie.getMessage());
+					  retVal="FAIL3#";
+					}
+					finally
+					{
+					  if (xtw != null && rs!=null && psInsert!=null && con!=null && psUpdate!=null)
+					  {
+						try
+						{
+							  xtw.close();
+							  fos.close();
+							  rs.close();
+							  psInsert.close();
+							  psUpdate.close();
+							  psRO.close();
+							  //con.close();
+						}
+						catch (XMLStreamException e)
+						{
+						  System.out.println("Log4\n"+e.getMessage());
+						}
+						catch(Exception e)
+						{
+							}
+					  }
+					}
+					System.out.println("Exit from generateERF ..."+retVal);
+					return retVal;
+	}//generateERF
+
+	private long getAmount(String str)
+	{
+			long i=0;
+		try
+		{
+			//System.out.println("Amount ::::"+str);
+			String numStr = str;//str.replaceAll("^0*", "");
+			long num = Long.parseLong(numStr);
+			i= num;
+		}
+		catch(Exception e)
+		{
+				System.out.println("Exception in getAmount()"+e);
+		}
+		return i;
+	}
+	
+}

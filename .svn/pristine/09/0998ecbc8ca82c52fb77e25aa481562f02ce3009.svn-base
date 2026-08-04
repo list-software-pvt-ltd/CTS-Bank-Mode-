@@ -1,0 +1,639 @@
+<?xml version="1.0" encoding="UTF-8"  ?>
+<!-- Created with iReport - A designer for JasperReports -->
+<!DOCTYPE jasperReport PUBLIC "//JasperReports//DTD Report Design//EN" "http://jasperreports.sourceforge.net/dtds/jasperreport.dtd">
+<jasperReport
+		 name="report_return_inward_All_withoutmemo"
+		 columnCount="1"
+		 printOrder="Vertical"
+		 orientation="Portrait"
+		 pageWidth="545"
+		 pageHeight="842"
+		 columnWidth="545"
+		 columnSpacing="0"
+		 leftMargin="0"
+		 rightMargin="0"
+		 topMargin="0"
+		 bottomMargin="0"
+		 whenNoDataType="NoPages"
+		 isTitleNewPage="false"
+		 isSummaryNewPage="false">
+	<property name="ireport.scriptlethandling" value="0" />
+	<property name="ireport.encoding" value="UTF-8" />
+	<import value="java.util.*" />
+	<import value="net.sf.jasperreports.engine.*" />
+	<import value="net.sf.jasperreports.engine.data.*" />
+
+	<parameter name="dateString" isForPrompting="true" class="java.lang.String">
+		<defaultValueExpression ><![CDATA["01012014"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="branchString" isForPrompting="true" class="java.lang.String">
+		<defaultValueExpression ><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="bankName" isForPrompting="true" class="java.lang.String">
+		<defaultValueExpression ><![CDATA[""]]></defaultValueExpression>
+	</parameter>
+	<parameter name="clearingType" isForPrompting="true" class="java.lang.String">
+		<defaultValueExpression ><![CDATA["00"]]></defaultValueExpression>
+	</parameter>
+	<queryString><![CDATA[SELECT
+     RETURNINWARD."RTI_ITEMSEQNO" AS RETURNINWARD_RTI_ITEMSEQNO,
+     RETURNINWARD."RTI_SERIALNO" AS RETURNINWARD_RTI_SERIALNO,
+     RETURNINWARD."RTI_TRANSCODE" AS RETURNINWARD_RTI_TRANSCODE,
+     RETURNINWARD."RTI_AMOUNT" AS RETURNINWARD_RTI_AMOUNT,
+     RETURNINWARD."RTI_ACCOUNTNO" AS RETURNINWARD_RTI_ACCOUNTNO,
+     --nvl(ITEMRETURNREASON_CHM."ITM_DESCRIPTION",'-') AS RETURNINWARD_RTI_RETURNCOMMENT,
+     nvl(RETINWRETCODES."RETDESCR",'-') AS RETURNINWARD_RTI_RETURNCOMMENT ,
+     TO_CHAR(TO_DATE(RETURNINWARD."RTI_DDMMYYYY",'DD/MM/YYYY'),'DD/MM/YYYY') AS RETURNINWARD_RTI_DDMMYYY,
+     RETURNINWARD."RTI_PAYORBANKROUTNO" AS RETURNINWARD_RTI_PAYORBANKROUT,
+     RETURNINWARD."RTI_RETURNREASON"   AS RETURNINWARD_RTI_RETURNREASON,
+     substr(RETURNINWARD."RTI_FILENAME",1,29) AS RETURNINWARD_RTI_FILENAME,
+     CLEARINGOUTWARD."CLO_PAYEE_ACCNO" AS CLEARINGOUTWARD_CLO_PAYEE_ACCN,
+     CLEARINGOUTWARD."CLO_PAYEE_ACCNM" AS CLEARINGOUTWARD_CLO_PAYEE_ACNM,
+     CLEARINGOUTWARD."CLO_CHQNO" AS CLEARINGOUTWARD_CLO_CHQNO,
+     CLEARINGOUTWARD."CLO_SORTCD" AS CLEARINGOUTWARD_CLO_SORTCD,
+     CLEARINGOUTWARD."CLO_DRAWEE_ACCNO" AS CLEARINGOUTWARD_CLO_DRAWEE_ACC,
+     CLEARINGOUTWARD."CLO_BRANCH_CD" AS CLEARINGOUTWARD_CLO_BRANCH_CD,
+     lpad(BRANCHMSTR."BRM_BRNCD",2,'0')||'--'||BRANCHMSTR."BRM_BRNNM" AS BRM_CD_BRNNM ,
+      decode(RETURNINWARD."RTI_RETURNREASON",'88','('||RETURNINWARD."RTI_RETURNREASONCOMMENT"||')',' ') RTI_RETURNREASONCOMMENT ,
+     CLEARINGOUTWARD."CLO_BOFD" AS CLEARINGOUTWARD_CLO_BOFD,
+     --nvl(BANKMASTER_CHM."BNK_NAME","RETURNINWARD".RTI_PAYORBANKROUTNO) AS BANKMASTER_CHM_BANK_NAME
+     --nvl((select BNK_NAME from BANKMASTER_CHM where BNK_ROUTING_NBR=(select BRN_BNK_ROUTING_NBR from BRANCHMASTER_CHM where BRN_ROUTING_NBR=CLEARINGOUTWARD."CLO_SORTCD")),CLO_SORTCD) BANKMASTER_CHM_BANK_NAME
+   -- nvl((select BNK_NAME from BANKMASTER_CHM where BNK_ROUTING_NBR=(select distinct BRN_BNK_ROUTING_NBR from BRANCHMASTER_CHM where BRN_ROUTING_NBR= CLO_SORTCD )),
+   -- nvl((select BNK_NAME from BANKMASTER_CHM where substr(BNK_ROUTING_NBR,1,6)=substr(CLO_SORTCD,1,6)),CLO_SORTCD)) BNK_NAME
+	nvl((nvl((select BNK_NAME||' '||CLO_SORTCD from BANKMASTER_CHM where BNK_ROUTING_NBR=CLO_SORTCD),
+	(select BNK_NAME||' '||CLO_SORTCD from BANKMASTER_CHM where BNK_ROUTING_NBR=
+	(select distinct  BRN_BNK_ROUTING_NBR from BRANCHMASTER_CHM 
+	where BRN_ROUTING_NBR=CLO_SORTCD )))),CLO_SORTCD) AS BNK_NAME,
+	TO_CHAR(TO_DATE(RETURNINWARD."RTI_PRESENTMENTDATE",'DD/MM/YYYY'),'DD/MM/YYYY') AS RTI_PRESENTMENTDATE
+
+FROM
+    "RETURNINWARD" RETURNINWARD join "CLEARINGOUTWARD" CLEARINGOUTWARD 
+     on CLEARINGOUTWARD."CLO_CHQNO"=RETURNINWARD."RTI_SERIALNO"
+    AND   CLEARINGOUTWARD."CLO_SORTCD"=RETURNINWARD."RTI_PAYORBANKROUTNO"
+    AND CLEARINGOUTWARD."CLO_ITEMSEQNO"=nvl(RETURNINWARD."RTI_ITEMSEQNO",CLEARINGOUTWARD."CLO_ITEMSEQNO")
+   AND to_number(CLEARINGOUTWARD."CLO_AMOUNT")=to_number(RETURNINWARD."RTI_AMOUNT")
+   AND to_number(CLEARINGOUTWARD."CLO_TRANCD")=to_number(RETURNINWARD."RTI_TRANSCODE")
+   AND CLEARINGOUTWARD."CLO_DATE_DDMMYYYY"=RETURNINWARD."RTI_PRESENTMENTDATE"
+   join "BRANCHMSTR" BRANCHMSTR on BRANCHMSTR."BRM_MICRCD"=CLEARINGOUTWARD."CLO_BOFD"
+     --left outer join "BANKMASTER_CHM" BANKMASTER_CHM on substr("RETURNINWARD".RTI_PAYORBANKROUTNO,1,6)=
+     --substr(BANKMASTER_CHM."BNK_ROUTING_NBR",1,6)
+    -- left outer join "ITEMRETURNREASON_CHM" ITEMRETURNREASON_CHM on ITEMRETURNREASON_CHM."ITM_RETURN_REASON_CODE"
+    -- =RETURNINWARD."RTI_RETURNREASON" 
+     join "RETINWRETCODES" RETINWRETCODES on RETURNINWARD."RTI_RETURNREASON"=RETINWRETCODES."RETCODE"
+WHERE
+      RETURNINWARD."RTI_PRESENTMENTDATE" in (select DISTINCT RTI_PRESENTMENTDATE from RETURNINWARD 
+WHERE RTI_DDMMYYYY=$P{dateString})   and RTI_DDMMYYYY=$P{dateString}
+and 
+    BRANCHMSTR."BRM_BRNCD"=decode($P{branchString},'-1',BRANCHMSTR."BRM_BRNCD",$P{branchString})
+and 
+    RETURNINWARD."RTI_CLEARINGTYPE"=
+    decode($P{clearingType},'0',RETURNINWARD."RTI_CLEARINGTYPE",$P{clearingType})
+--AND
+--    CLEARINGOUTWARD."CLO_DATE_DDMMYYYY"=to_char
+--    ((select max(to_date(A.CLO_DATE_DDMMYYYY,'ddmmyyyy')) from CLEARINGOUTWARD A where 
+--    RETURNINWARD."RTI_SERIALNO"=A.CLO_CHQNO and RETURNINWARD."RTI_PAYORBANKROUTNO"=
+--    A.CLO_SORTCD),'ddmmyyyy')
+order by
+      RETURNINWARD_RTI_FILENAME,RTI_PRESENTMENTDATE,BRM_CD_BRNNM,RETURNINWARD_RTI_ITEMSEQNO]]></queryString>
+
+	<field name="RETURNINWARD_RTI_ITEMSEQNO" class="java.lang.String"/>
+	<field name="RETURNINWARD_RTI_SERIALNO" class="java.lang.String"/>
+	<field name="RETURNINWARD_RTI_TRANSCODE" class="java.lang.String"/>
+	<field name="RETURNINWARD_RTI_AMOUNT" class="java.lang.String"/>
+	<field name="RETURNINWARD_RTI_ACCOUNTNO" class="java.lang.String"/>
+	<field name="RETURNINWARD_RTI_RETURNCOMMENT" class="java.lang.String"/>
+	<field name="RETURNINWARD_RTI_DDMMYYY" class="java.lang.String"/>
+	<field name="RETURNINWARD_RTI_PAYORBANKROUT" class="java.lang.String"/>
+	<field name="RETURNINWARD_RTI_RETURNREASON" class="java.lang.String"/>
+	<field name="RETURNINWARD_RTI_FILENAME" class="java.lang.String"/>
+	<field name="CLEARINGOUTWARD_CLO_PAYEE_ACCN" class="java.lang.String"/>
+	<field name="CLEARINGOUTWARD_CLO_PAYEE_ACNM" class="java.lang.String"/>
+	<field name="CLEARINGOUTWARD_CLO_CHQNO" class="java.lang.String"/>
+	<field name="CLEARINGOUTWARD_CLO_SORTCD" class="java.lang.String"/>
+	<field name="CLEARINGOUTWARD_CLO_DRAWEE_ACC" class="java.lang.String"/>
+	<field name="CLEARINGOUTWARD_CLO_BRANCH_CD" class="java.lang.String"/>
+	<field name="BRM_CD_BRNNM" class="java.lang.String"/>
+	<field name="RTI_RETURNREASONCOMMENT" class="java.lang.String"/>
+	<field name="CLEARINGOUTWARD_CLO_BOFD" class="java.lang.String"/>
+	<field name="BNK_NAME" class="java.lang.String"/>
+	<field name="RTI_PRESENTMENTDATE" class="java.lang.String"/>
+
+	<variable name="sessionNumber" class="java.lang.Integer" resetType="Report" incrementType="Group" incrementGroup="sessionGroup" calculation="Count">
+		<variableExpression><![CDATA[$V{sessionNumber}]]></variableExpression>
+		<initialValueExpression><![CDATA[new Integer(1)]]></initialValueExpression>
+	</variable>
+	<variable name="sessionTotAmt" class="java.lang.Double" resetType="Group" resetGroup="sessionGroup" calculation="Sum">
+		<variableExpression><![CDATA[new Double(Double.parseDouble($F{RETURNINWARD_RTI_AMOUNT})/100)]]></variableExpression>
+	</variable>
+	<variable name="grandTotAmt" class="java.lang.Double" resetType="Report" calculation="Sum">
+		<variableExpression><![CDATA[new Double(Double.parseDouble($F{RETURNINWARD_RTI_AMOUNT})/100)]]></variableExpression>
+	</variable>
+	<variable name="brnTotAmt" class="java.lang.Double" resetType="Group" resetGroup="branchGroup" calculation="Sum">
+		<variableExpression><![CDATA[new Double(Double.parseDouble($F{RETURNINWARD_RTI_AMOUNT})/100)]]></variableExpression>
+	</variable>
+	<variable name="srno" class="java.lang.Integer" resetType="Report" incrementType="Report" calculation="Nothing">
+		<variableExpression><![CDATA[new Integer($V{srno}.intValue()+1)]]></variableExpression>
+		<initialValueExpression><![CDATA[new Integer(0)]]></initialValueExpression>
+	</variable>
+
+		<group  name="sessionGroup" >
+			<groupExpression><![CDATA[$F{RETURNINWARD_RTI_FILENAME}]]></groupExpression>
+			<groupHeader>
+			<band height="0"  isSplitAllowed="true" >
+			</band>
+			</groupHeader>
+			<groupFooter>
+			<band height="0"  isSplitAllowed="true" >
+				<staticText>
+					<reportElement
+						x="1"
+						y="-80"
+						width="475"
+						height="0"
+						key="staticText-23"
+						stretchType="RelativeToTallestObject"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font pdfFontName="Helvetica-Bold" size="8" isBold="true" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Sessionwise Total Amount:]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="false" pattern="##0.00" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="476"
+						y="-80"
+						width="69"
+						height="0"
+						key="textField"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.Double"><![CDATA[$V{sessionTotAmt}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement
+						x="1"
+						y="-22"
+						width="479"
+						height="0"
+						key="staticText-34"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="8" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Grand Total Amount:]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="false" pattern="##0.00" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="475"
+						y="-22"
+						width="70"
+						height="0"
+						key="textField"
+						stretchType="RelativeToTallestObject"
+						positionType="Float"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.Double"><![CDATA[$V{grandTotAmt}]]></textFieldExpression>
+				</textField>
+			</band>
+			</groupFooter>
+		</group>
+		<group  name="presentmentdtgroup" >
+			<groupExpression><![CDATA[$F{RTI_PRESENTMENTDATE}]]></groupExpression>
+			<groupHeader>
+			<band height="20"  isSplitAllowed="true" >
+				<staticText>
+					<reportElement
+						x="0"
+						y="0"
+						width="95"
+						height="20"
+						key="staticText-43"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" leftPadding="2" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement verticalAlignment="Middle">
+						<font pdfFontName="Helvetica-Bold" isBold="true"/>
+					</textElement>
+				<text><![CDATA[Presentment Date :]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="false" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="95"
+						y="0"
+						width="450"
+						height="20"
+						key="textField-7"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" leftPadding="2" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement verticalAlignment="Middle">
+						<font pdfFontName="Helvetica-Bold" isBold="true"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$F{RTI_PRESENTMENTDATE}]]></textFieldExpression>
+				</textField>
+			</band>
+			</groupHeader>
+			<groupFooter>
+			<band height="0"  isSplitAllowed="true" >
+			</band>
+			</groupFooter>
+		</group>
+		<group  name="branchGroup" >
+			<groupExpression><![CDATA[$F{CLEARINGOUTWARD_CLO_BOFD}]]></groupExpression>
+			<groupHeader>
+			<band height="20"  isSplitAllowed="true" >
+				<textField isStretchWithOverflow="false" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="70"
+						y="0"
+						width="474"
+						height="20"
+						key="textField-4"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" leftPadding="2" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$F{BRM_CD_BRNNM}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement
+						x="0"
+						y="0"
+						width="70"
+						height="20"
+						key="staticText-40"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" leftPadding="2" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<text><![CDATA[Branch Code:]]></text>
+				</staticText>
+			</band>
+			</groupHeader>
+			<groupFooter>
+			<band height="20"  isSplitAllowed="true" >
+				<staticText>
+					<reportElement
+						x="0"
+						y="0"
+						width="475"
+						height="20"
+						key="staticText-41"
+						stretchType="RelativeToTallestObject"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font pdfFontName="Helvetica-Bold" size="10" isBold="true" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Branch Wise Total Amount:]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="false" pattern="##0.00" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="475"
+						y="0"
+						width="69"
+						height="20"
+						key="textField-5"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" rightPadding="4" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font/>
+					</textElement>
+				<textFieldExpression   class="java.lang.Double"><![CDATA[$V{brnTotAmt}]]></textFieldExpression>
+				</textField>
+			</band>
+			</groupFooter>
+		</group>
+		<background>
+			<band height="0"  isSplitAllowed="true" >
+			</band>
+		</background>
+		<title>
+			<band height="63"  isSplitAllowed="false" >
+				<staticText>
+					<reportElement
+						x="1"
+						y="61"
+						width="474"
+						height="0"
+						key="staticText-35"
+						stretchType="RelativeToTallestObject"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font pdfFontName="Helvetica-Bold" size="8" isBold="true" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Branchwise Total Amount:]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="false" pattern="##0.00" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="476"
+						y="61"
+						width="67"
+						height="0"
+						key="textField"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.Double"><![CDATA[$V{brnTotAmt}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement
+						x="1"
+						y="0"
+						width="544"
+						height="27"
+						key="staticText-1"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="14" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Return Inward]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="0"
+						y="46"
+						width="476"
+						height="17"
+						key="staticText-4"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="10" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Date:]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="false" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="1"
+						y="27"
+						width="544"
+						height="19"
+						key="textField"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="14"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$P{bankName}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="false" isBlankWhenNull="false" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="476"
+						y="46"
+						width="68"
+						height="17"
+						key="textField"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$F{RETURNINWARD_RTI_DDMMYYY}]]></textFieldExpression>
+				</textField>
+			</band>
+		</title>
+		<pageHeader>
+			<band height="0"  isSplitAllowed="true" >
+			</band>
+		</pageHeader>
+		<columnHeader>
+			<band height="20"  isSplitAllowed="true" >
+				<staticText>
+					<reportElement
+						x="21"
+						y="0"
+						width="49"
+						height="20"
+						key="staticText-24"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Cheque
+No]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="70"
+						y="0"
+						width="98"
+						height="20"
+						key="staticText-25"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Bank Name]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="475"
+						y="0"
+						width="69"
+						height="20"
+						key="staticText-28"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Amount]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="386"
+						y="0"
+						width="89"
+						height="20"
+						key="staticText-29"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Account No]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="168"
+						y="0"
+						width="120"
+						height="20"
+						key="staticText-36"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Return Reason ]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="288"
+						y="0"
+						width="98"
+						height="20"
+						key="staticText-37"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Payee Name]]></text>
+				</staticText>
+				<staticText>
+					<reportElement
+						x="0"
+						y="0"
+						width="21"
+						height="20"
+						key="staticText-38"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+				<text><![CDATA[Sr
+No]]></text>
+				</staticText>
+			</band>
+		</columnHeader>
+		<detail>
+			<band height="18"  isSplitAllowed="true" >
+				<textField isStretchWithOverflow="false" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="21"
+						y="0"
+						width="49"
+						height="18"
+						key="textField"
+						stretchType="RelativeToTallestObject"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$F{RETURNINWARD_RTI_SERIALNO}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="false" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="386"
+						y="0"
+						width="89"
+						height="18"
+						key="textField"
+						stretchType="RelativeToTallestObject"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$F{CLEARINGOUTWARD_CLO_PAYEE_ACCN}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="70"
+						y="0"
+						width="98"
+						height="18"
+						key="textField"
+						stretchType="RelativeToTallestObject"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$F{BNK_NAME}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="false" pattern="##0.00" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="475"
+						y="0"
+						width="69"
+						height="18"
+						key="textField"
+						stretchType="RelativeToTallestObject"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="Thin" rightBorderColor="#000000" rightPadding="4" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.Double"><![CDATA[new Double(Double.parseDouble($F{RETURNINWARD_RTI_AMOUNT})/100)]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="168"
+						y="0"
+						width="120"
+						height="18"
+						key="textField"
+						stretchType="RelativeToTallestObject"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$F{RETURNINWARD_RTI_RETURNREASON}+"-"+$F{RETURNINWARD_RTI_RETURNCOMMENT}+""+$F{RTI_RETURNREASONCOMMENT}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="false" pattern="##0.00" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="288"
+						y="0"
+						width="98"
+						height="18"
+						key="textField-1"
+						stretchType="RelativeToTallestObject"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" leftPadding="2" rightBorder="None" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.String"><![CDATA[$F{CLEARINGOUTWARD_CLO_PAYEE_ACNM}.trim()]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="false" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="0"
+						y="0"
+						width="21"
+						height="18"
+						key="textField-2"
+						stretchType="RelativeToTallestObject"/>
+					<box topBorder="Thin" topBorderColor="#000000" leftBorder="Thin" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="Thin" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.Integer"><![CDATA[$V{srno}]]></textFieldExpression>
+				</textField>
+			</band>
+		</detail>
+		<columnFooter>
+			<band height="0"  isSplitAllowed="true" >
+			</band>
+		</columnFooter>
+		<pageFooter>
+			<band height="0"  isSplitAllowed="true" >
+			</band>
+		</pageFooter>
+		<lastPageFooter>
+			<band height="30"  isSplitAllowed="true" >
+				<staticText>
+					<reportElement
+						x="386"
+						y="0"
+						width="89"
+						height="30"
+						key="staticText-42"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="10" isUnderline="false"/>
+					</textElement>
+				<text><![CDATA[Total Amount]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="false" pattern="##0.00" isBlankWhenNull="true" evaluationTime="Now" hyperlinkType="None"  hyperlinkTarget="Self" >
+					<reportElement
+						x="475"
+						y="0"
+						width="69"
+						height="30"
+						key="textField-6"
+						stretchType="RelativeToTallestObject"/>
+					<box topBorder="None" topBorderColor="#000000" leftBorder="None" leftBorderColor="#000000" rightBorder="None" rightBorderColor="#000000" rightPadding="4" bottomBorder="None" bottomBorderColor="#000000"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="10"/>
+					</textElement>
+				<textFieldExpression   class="java.lang.Double"><![CDATA[$V{grandTotAmt}]]></textFieldExpression>
+				</textField>
+			</band>
+		</lastPageFooter>
+		<summary>
+			<band height="0"  isSplitAllowed="true" >
+			</band>
+		</summary>
+</jasperReport>

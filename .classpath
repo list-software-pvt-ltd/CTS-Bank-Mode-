@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry excluding="cts/ByteToImageConverter_old.java|cts/AnotherTest.java|cts/ImgConvertor1.java|cts/TifToJpg.java|cts/SendMail.java" kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jdk-11.0.10">
+		<attributes>
+			<attribute name="module" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.web.container"/>
+	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.module.container"/>
+	<classpathentry kind="lib" path="D:/Apache10/lib/servlet-api.jar"/>
+	<classpathentry kind="lib" path="D:/Apache10/lib/jakarta.activation-api-2.1.0.jar"/>
+	<classpathentry kind="lib" path="D:/Apache10/lib/jakartaee-migration-0.2.0-shaded.jar"/>
+	<classpathentry kind="lib" path="D:/Apache10/lib/CBSPASS3.jar"/>
+	<classpathentry kind="lib" path="D:/Apache10/lib/CBSUserValidation.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/httpclient-4.5.3.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/httpclient-cache-4.5.3.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/httpclient-win-4.5.3.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/httpcore-4.4.6.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/httpmime-4.5.3.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/org-apache-commons-codec.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/commons-codec-1.9.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/commons-codec-1.9-javadoc.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/commons-codec-1.9-sources.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/commons-codec-1.9-tests.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/commons-codec-1.9-test-sources.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/commons-collections-2.1.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/commons-digester-1.7.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/commons-fileupload-1.3.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/commons-io-2.4.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/commons-io-2.4-javadoc.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/commons-io-2.4-sources.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/commons-io-2.4-tests.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/commons-io-2.4-test-sources.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/commons-logging-1.2.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/commons-logging-1.2-javadoc.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/commons-net-3.3.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/commons-net-3.3-sources.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/commons-net-examples-3.3.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/Utility.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/jasper.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/jasper-el.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/jasperreports-1.3.3.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/jaspic-api.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/java-json.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/javase-3.3.0.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/jcifs-1.2.9.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/jsch-0.1.46.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/jsp-api.jar"/>
+	<classpathentry kind="lib" path="D:/apache-tomcat-10.1.15/lib/ksoap2-android-assembly-2.5.8-jar-with-dependencies.jar"/>
+	<classpathentry kind="lib" path="D:/Apache10/lib/ojdbc6.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jst.server.core.container/org.eclipse.jst.server.tomcat.runtimeTarget/Apache Tomcat v10.0 (2)">
+		<attributes>
+			<attribute name="owner.project.facets" value="jst.web"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="output" path="build/classes"/>
+</classpath>

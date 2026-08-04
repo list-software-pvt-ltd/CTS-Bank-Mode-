@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><rows>
+<row id="1">
+<cell id="FILE_ID" image="folder.gif">1</cell>
+<cell id="MAIN_ID" image="folder.gif"/>
+<cell id="FILE_TYPE" image="folder.gif">Return Outward</cell>
+<cell id="FILENAME" image="folder.gif"/>
+<cell id="UPLOAD_FLAG" image="folder.gif"/>
+<cell id="dummy1">0</cell>
+<row id="2">
+<cell id="FILE_ID" image="folder.gif">196</cell>
+<cell id="MAIN_ID" image="folder.gif">1</cell>
+<cell id="FILE_TYPE" image="folder.gif"/>
+<cell id="FILENAME" image="folder.gif">RRF_413597000_14012020_115343_01.XML</cell>
+<cell id="UPLOAD_FLAG" image="folder.gif">No</cell>
+<cell id="dummy1">0</cell>
+</row>
+<row id="3">
+<cell id="FILE_ID" image="folder.gif">197</cell>
+<cell id="MAIN_ID" image="folder.gif">1</cell>
+<cell id="FILE_TYPE" image="folder.gif"/>
+<cell id="FILENAME" image="folder.gif">RRF_413597000_14012020_115343_01.XML.done</cell>
+<cell id="UPLOAD_FLAG" image="folder.gif">No</cell>
+<cell id="dummy1">0</cell>
+</row>
+</row>
+<row id="4">
+<cell id="FILE_ID" image="folder.gif">2</cell>
+<cell id="MAIN_ID" image="folder.gif"/>
+<cell id="FILE_TYPE" image="folder.gif">Clearing Outward</cell>
+<cell id="FILENAME" image="folder.gif"/>
+<cell id="UPLOAD_FLAG" image="folder.gif"/>
+<cell id="dummy1">0</cell>
+</row>
+</rows>

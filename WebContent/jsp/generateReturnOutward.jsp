@@ -1,0 +1,68 @@
+<%@page import="java.sql.*"%>
+<%@page import="java.util.*"%>
+<%@page import="java.io.*"%>
+<%@page import="cts.*" %>
+<%@ page import="java.security.*" %>
+<%
+	System.out.println("******************** start of generateReturnOutward.jsp **********************");
+	String retVal="",returnValue="";
+	Connection con=Configuration.getConnection();
+	String CHI_Bank_Name=Configuration.getConfValByNm("CFG_CHI_BANKNAME",con);
+	String uppath=Configuration.getConfValByNm("CFG_UPLOADPATH_TO_CHI",con);
+ 	uppath=new File(uppath).getParent();
+	
+	PrivateKey privateKey=null;
+	privateKey= new CtsSecurity(con).getPrivateKey(uppath+"/WEB-INF/classes/cts/");
+	String CLEARINGTYPE="";
+	PreparedStatement pst_clearingType = null;
+	try {// 2
+		pst_clearingType = con
+				.prepareStatement("select distinct RTO_CLEARINGTYPE from RETRUNOUTWARD where RTO_DDMMYYYY=?");
+		pst_clearingType.setString(1, Configuration.getDDMMYYYY());
+		ResultSet rs = null;
+		rs = pst_clearingType.executeQuery();
+		if (rs.next()) {// 3
+			//writeLog("*** in if ****:");
+			CLEARINGTYPE = rs.getString(1);
+		}
+		rs.close();
+		pst_clearingType.close();
+	}catch(Exception e){ }
+	
+	if(CHI_Bank_Name.equals("NPCI")||CHI_Bank_Name.equals("AXIS")||CHI_Bank_Name.equals("IDBI"))
+		returnValue=new Engine(con).generateRRF(privateKey);	
+	else
+		returnValue=new Engine(con).generateRET(CLEARINGTYPE);	
+	
+				String[] strArr=returnValue.split("#");	
+				if(strArr[0].indexOf("SUCCESS")>-1)
+				{//3
+						retVal="Return Outward File Generated Successfully.\n";
+				}//3
+				else 
+				{//3
+					if(strArr[0].indexOf("FAIL1")>-1)
+					{	
+						retVal="Problem in XML Tags";
+					}
+					else if(strArr[0].indexOf("FAIL2")>-1)
+					{
+						retVal="Problem to write XML";
+					}
+					else if(strArr[0].indexOf("FAIL3")>-1)
+					{
+						retVal="Problem to generate RRF file";
+					}
+					else if(strArr[0].indexOf("No return outward Cheque")>-1)
+					{
+							retVal="No return outward Cheque";
+					}
+					else
+					{
+						retVal=strArr[0];
+					}
+				}//3
+				con.close();
+	System.out.println("******************** end of generateReturnOutward.jsp *************************");
+%>
+<%="#"+retVal%>

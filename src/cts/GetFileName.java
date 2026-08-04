@@ -1,0 +1,261 @@
+package cts;
+import java.io.*;
+import java.sql.*;
+public class GetFileName
+{//1
+
+	/*public static void main(String...args)
+	{
+			System.out.println(getClearingFileName("CIBF","img"));
+	}*/
+	public  static String getClearingFileName(String preFix, String extention,Connection con)
+	{//2
+		String fileName="";
+		try
+		{//3
+			fileName=preFix+"_";
+			fileName=fileName+Configuration.getConfValByNm("CFG_BANKROUTINGCODE",con)+"_";
+			fileName=fileName+Configuration.getDDMMYYYY()+"_";
+			int fileCnt=1;
+			File root=new File(Configuration.getConfValByNm("CFG_UPLOADPATH_TO_CHI",con));
+			String fileList[]=root.list();
+			for(int i=0;i<fileList.length;i++)
+			{//4
+
+				if(fileList[i].indexOf(fileName)==0 && fileList[i].endsWith(".img"))
+				{//5
+					fileCnt++;
+				}//5
+			}//4
+			/*if(fileCnt<=9)
+			{
+				fileName=fileName+"0"+fileCnt;
+			}
+			else
+			{
+				fileName=fileName+fileCnt;
+			}*/
+			fileName=fileName+Configuration.getHHMISS()+"_";
+			fileName=fileName+getClearingTypeFrmDB()+"_";//"00"+"_";//Clearing Type
+			fileName=fileName+Configuration.lPad(""+fileCnt,8,"0")+"_";
+			fileName=fileName+Configuration.lPad(""+fileCnt,2,"0");
+			fileName=fileName+extention;
+		}//3
+		catch (Exception e)
+		{//3
+			System.out.println("Exception:::::"+e);
+		}//3
+		return fileName;
+	}//2
+
+	public  static String getClearingFileName_HDFC(String preFix, String extention,Connection con)
+	{//2
+		String fileName="";
+		try
+		{//3
+			fileName=preFix+"_";
+			//fileName=fileName+Configuration.getConfValByNm("CFG_BANKROUTINGCODE")+"_";
+			fileName=fileName+Configuration.getConfValByNm("CFG_VENDOR_ID",con)+"_";//5 digit vendor id
+			fileName=fileName+Configuration.getConfValByNm("CFG_HUB_LOCATION_ID",con)+"_";//3 digit vendor Hub Location Id
+			fileName=fileName+Configuration.getDDMMYYYY()+"_";
+			int fileCnt=1;
+			File root=new File(Configuration.getConfValByNm("CFG_UPLOADPATH_TO_CHI",con));
+			String fileList[]=root.list();
+			for(int i=0;i<fileList.length;i++)
+			{//4
+
+				if(fileList[i].indexOf(fileName)==0 && fileList[i].endsWith(".img"))
+				{//5
+					fileCnt++;
+				}//5
+			}//4
+			/*if(fileCnt<=9)
+			{
+				fileName=fileName+"0"+fileCnt;
+			}
+			else
+			{
+				fileName=fileName+fileCnt;
+			}*/
+			fileName=fileName+Configuration.getHHMISS()+"_";
+			//fileName=fileName+getClearingTypeFrmDB()+"_";//"00"+"_";//Clearing Type
+			//fileName=fileName+Configuration.lPad(""+fileCnt,8,"0")+"_";
+			//fileName=fileName+Configuration.lPad(""+fileCnt,2,"0");
+
+			fileName=fileName+Configuration.lPad(""+fileCnt,10,"0");//10 digit file id
+			fileName=fileName+extention;
+		}//3
+		catch (Exception e)
+		{//3
+			System.out.println("Exception:::::"+e);
+		}//3
+		return fileName;
+	}//2
+
+	public static String getClearingTypeFrmDB()
+	{//1
+			String clearingType=null;
+			String retClearingType=null;
+			Connection con=null;
+			PreparedStatement ps=null;
+			ResultSet rs=null;
+			try
+			{
+					con=Configuration.getConnection();
+					String today_date=Configuration.getDDMMYYYY();
+					System.out.println("today_date=="+today_date);
+					ps=con.prepareStatement("select distinct CLO_CLEARINGTYPE from CLEARINGOUTWARD where  CLO_CONVERT_FLG='Y' ");//and CLO_DATE_DDMMYYYY='"+today_date+"'");
+					//ps.setString(1,Configuration.getDDMMYYYY());
+					rs=ps.executeQuery();
+
+					int counter=0;
+					while(rs.next())
+					{
+						clearingType=rs.getString(1);
+						counter++;
+					}
+
+					if(counter==1)
+					{
+							retClearingType=clearingType;
+					}
+					else
+					{
+							retClearingType="00";
+					}
+					System.out.println("retClearingType=="+retClearingType);
+			}
+			catch(Exception e)
+			{
+								System.out.println("\n\tException in Configuration.getClearingTypeFrmDB:"+e);
+			}
+			finally
+			{
+					try
+					{
+							rs.close();
+							ps.close();
+							con.close();
+					}catch(Exception e){}
+			}
+
+			return retClearingType;
+	}//1
+
+
+	public  static String getReturnFileName(String preFix,Connection con)
+	{//2
+		String fileName="";
+		try
+		{//3
+			fileName=preFix+"_";
+			fileName=fileName+Configuration.getConfValByNm("CFG_BANKROUTINGCODE",con)+"_";
+			fileName=fileName+Configuration.getDDMMYYYY()+"_";
+			fileName=fileName+Configuration.getHHMISS()+"_";
+			File root=new File(Configuration.getConfValByNm("CFG_UPLOADPATH_TO_CHI",con));
+			String fileList[]=root.list();
+			int fileCnt=1;
+			for(int i=0;i<fileList.length;i++)
+			{//4
+				if(fileList[i].contains("RRF")&& fileList[i].endsWith(".XML"))
+				{//5
+					fileCnt++;
+				}//5
+			}//4
+			if(fileCnt<=9)
+			{
+				fileName=fileName+"0"+fileCnt;
+			}
+			else
+			{
+				fileName=fileName+fileCnt;
+			}
+			fileName=fileName+".XML";
+		}//3
+		catch (Exception e)
+		{//3
+			System.out.println("\n\nException:::::"+e+"\n\n");
+		}//3
+		return fileName;
+	}//2
+	public  static String getReturnFileName_HDFC(String preFix,Connection con,String CLEARINGTYPE)
+	{//2
+		String fileName="";
+		try
+		{//3
+			//fileName=preFix+"_";
+			//fileName=fileName+Configuration.getConfValByNm("CFG_BANKROUTINGCODE")+"_";RoutingCode
+			fileName=fileName+Configuration.getConfValByNm("CFG_SERVICEBNKROUTINGCODE",con)+"_";
+			fileName=fileName+Configuration.getDDMMYYYY()+"_";
+			System.out.println(CLEARINGTYPE+"====fileName="+fileName);
+			
+			fileName=fileName+CLEARINGTYPE+"_";
+			System.out.println("after   fileName="+fileName);
+	//sam 22-01-2025		fileName=fileName+"01"+"_";
+	//		411885000_15012025_01_01.RET
+			//fileName=fileName+Configuration.getConfValByNm("FileId");
+			//fileName=fileName+Configuration.getHHMISS()+"_";
+			File root=new File(Configuration.getConfValByNm("CFG_UPLOADPATH_TO_CHI",con));
+			String fileList[]=root.list();
+			int fileCnt=1;
+			for(int i=0;i<fileList.length;i++)
+			{//4
+				if(fileList[i].endsWith(".RET"))
+				{//5
+					fileCnt++;
+				}//5
+			}//4
+			if(fileCnt<=9)
+			{
+				fileName=fileName+"0"+fileCnt;
+			}
+			else
+			{
+				fileName=fileName+fileCnt;
+			}
+			//fileName=fileName+".XML";
+			fileName=fileName+".RET";
+		}//3
+		catch (Exception e)
+		{//3
+			System.out.println("\n\nException:::::"+e+"\n\n");
+		}//3
+		return fileName;
+	}//2  getReturnFileName_HDFC finished
+	public  static String getExtensionFileName(String preFix,Connection con)
+		{//2
+			String fileName="";
+			try
+			{//3
+				fileName=preFix+"_";
+				fileName=fileName+Configuration.getConfValByNm("CFG_BANKROUTINGCODE",con)+"_";
+				fileName=fileName+Configuration.getDDMMYYYY()+"_";
+				fileName=fileName+Configuration.getHHMISS()+"_";
+				File root=new File(Configuration.getConfValByNm("CFG_UPLOADPATH_TO_CHI",con));
+				String fileList[]=root.list();
+				int fileCnt=1;
+				for(int i=0;i<fileList.length;i++)
+				{//4
+					if(fileList[i].contains(preFix)&& fileList[i].endsWith(".XML"))
+					{//5
+						fileCnt++;
+					}//5
+				}//4
+				if(fileCnt<=9)
+				{
+					fileName=fileName+"0"+fileCnt;
+				}
+				else
+				{
+					fileName=fileName+fileCnt;
+				}
+				fileName=fileName+".XML";
+			}//3
+			catch (Exception e)
+			{//3
+				System.out.println("\n\nException:::::"+e+"\n\n");
+			}//3
+			return fileName;
+	}//2
+
+}//1

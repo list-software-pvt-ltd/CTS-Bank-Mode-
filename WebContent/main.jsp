@@ -1,0 +1,376 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="EN" lang="EN" dir="ltr">
+<head profile="http://gmpg.org/xfn/11">
+<title>CTS</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<meta http-equiv="imagetoolbar" content="no" />
+<link rel="stylesheet" href="styles/layout.css" type="text/css" />
+<link href="styles/sample.css" rel="stylesheet" id="bootstrap-css">
+<script src="js/bootstrap.min.js"></script>
+<script src="js/jquery-1.11.3.min.js"></script>
+<script src="js/main.js"></script>
+<%@page import="java.sql.*"%>
+<%@page import="cts.*"%>
+<style>
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 200px;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 10px 0;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -95px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.tooltip .tooltiptext::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #555 transparent transparent transparent;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+</style>
+</head>
+<%
+	
+	String msg="",userRole="",session_main_br_yn="";
+	String loginstyle="",fromBackPage="";
+	try
+	{
+	    fromBackPage=request.getParameter("CTSTOKEN");
+		System.out.println("fromBackPage=="+fromBackPage);
+		Connection cn=null;
+		cn=Configuration.getConnection();
+		loginstyle=Configuration.getConfValByNm("CFG_LOGINSTYLE", cn);
+		cn.close();
+		userRole=session.getAttribute("session_user_role").toString();
+		session_main_br_yn=session.getAttribute("session_main_br_yn").toString();
+		msg=request.getParameter("msg").trim();
+		
+	}
+	catch(NullPointerException npe)
+	{
+		System.out.println("Message to be displayed on login form is null");		
+	}			
+%>
+<body id="top" onload="doOnMainload()">
+<jsp:include page="menu.jsp">
+	<jsp:param name="htitle" value="MAIN" />
+</jsp:include>
+<div class="wrapper col3" style="background-color:#DBEFF9" >
+  <div id="container" style="height:100%;">  
+  <div id="waitProgress" style="position:absolute; width:100%; height:100%;background-color:rgba(0,0,0,.4); text-align:center; top:0p;display:none; z-index:10000; ">
+	<div style="position:absolute; width:100%; height:100%; float:left">			
+			<div style="height:80%; width:100%;">
+				<!-- for progress bar-->
+				<img src="images/wait.gif" style="vertical-align:middle;position: absolute;
+    margin: auto;top: 0;left: 0; right: 0; bottom: 0;" />
+			</div>
+			<div style="height:20%; width:100%">
+				<!-- for title-->
+				<font face="Verdana, Arial, Helvetica, sans-serif" size="+2" color="#FF0000">
+					<b>Backup Is In Progress..... Please Wait.</b>
+				</font>	
+			</div>	
+	</div>
+</div>				
+    <div class="row"  style="background-color:#DBEFF9">
+          <%
+						if((userRole.indexOf("C") > -1) && (session_main_br_yn.equalsIgnoreCase("Y")))
+						{
+						%> 
+        <div class="tab-content col-md-12">
+         <div role="tabpanel" class="tab-pane profile-pane active" id="dash">            
+                <div>
+                    <div>
+                        <div class="header" style=" background: #2684B7;">
+                            <h6 style="background: #2684B7;color: #fff ; text-align:center">Clearing Inward</h6>   
+                        </div>
+                        <div class="content" style="background: #EEE9E9;">
+                            <div class="row">
+                               <label type="text" ><b>Date:</b></label>  <label type="text" id="dateval1" ></label><br></br>
+                                <label type="text" ><b>No.Of Instruments:</b></label> <label type="text" id="noofins1" ></label><br></br>
+                                  <label type="text" ><b>Amount:</b></label><label type="text" id="amo1" ></label><br></br>
+                                 <label type="text" ><b>PPS Cheque:</b></label><label type="text" id="chq1" ></label>
+                                  <!--  <h5 class="col-sm-10 col-sm-offset-1 title" >Date --></h5><!--  -->
+                                    <!--  <h5 class="col-sm-10 col-sm-offset-1 title">No.Of Instruments</h5>
+                               <h5 class="col-sm-10 col-sm-offset-1 title">Amount</h5> -->
+                            </div>
+                           
+                          
+                        
+                        </div>
+                    </div>
+                    <div>
+                        <div class="header"style="background: #2684B7;">
+                            <h5 style="background: #2684B7;color: #fff; text-align:center">Return Outward</h5>   
+                        </div>
+                         <div class="content" style="background: #EEE9E9;">
+                         <div class="row">
+                                                                      
+                                      <label type="text" style=" text-align:left" ><b>Date:</b></label>
+                                      <label type="text" id="dateval2" ></label><br></br>
+                                      
+                                <label type="text" style=" text-align:left" ><b>No.Of Instruments:</b></label>
+                                <label type="text" id="noofins2" ></label><br></br>
+                                
+                                 <label type="text"  style=" text-align:left" >
+                                 <b>Amount:</b></label><label type="text" id="amo2" ></label><br></br>
+                                   
+                                <div>   
+                                <label class="header" style="background-color:#2684B7 ;color: #fff; text-align:center; font-size: small;">
+                               
+                                <b>-- Sent To NPCI --</b></label> <br></br></div> 
+                                   
+                                <div>
+                                
+                                  <!--   <h6>No.Of Instruments</h6> -->
+                                    <label type="text" ><b>No.Of Instruments:</b></label><label type="text" id="noofins3" ></label><br></br>
+                                </div>
+                                <div class="col-sm-6">
+                                   <!--  <h6>Amount</h6> -->
+                                       <label type="text" ><b>Amount:</b></label><label type="text" id="amo3" ></label><br></br>
+                                </div>
+                               
+                            <div  class="tooltip">  <label class="header" style="background-color:#2684B7 ;color: #fff; text-align:center; font-size: small;;">
+                              <b>- Accepted By NPCI -</b></label>
+                              <span class="tooltiptext" >Information will only appear here if the response has been read</span>
+                              <br></br>
+                            </div> 
+                               
+                               <div>
+                                   <!--  <h6>No.Of Instruments</h6> -->
+                                    <label type="text" ><b>No.Of Instruments:</b></label><label type="text" id="noofins4" ></label><br></br>
+                                </div>
+                                <div class="col-sm-6">
+                                  <!--   <h6>Amount</h6> -->
+                                      <label type="text" ><b>Amount:</b></label><label type="text" id="amo4" ></label><br></br>
+                                </div>
+                                
+                             <div  class="tooltip"> <label class="header" style="background-color:#2684B7 ;color: #fff; text-align:center; font-size: small;">
+                              <b>- OACK From NPCI -</b></label>
+                              <span class="tooltiptext" >Information will only appear here if the OACK has been read</span>
+                               <br></br>
+                              </div>  <div>
+                                    <!-- <h6>No.Of Instruments</h6> -->
+                                     <label type="text" ><b>No.Of Instruments:</b></label><label type="text" id="noofins5" ></label><br></br>
+                                </div>
+                                <div class="col-sm-6">
+                                   <!--  <h6>Amount</h6> -->
+                                     <label type="text" ><b>Amount:</b></label><label type="text" id="amo5" ></label>
+                                </div>
+                            
+                            </div>
+                       
+                    </div>
+                </div>
+                
+                 <div>
+                        <div class="header" style="background: #2684B7;">
+                            <h5 style="background: #2684B7;color: #fff ; text-align:center">Clearing Outward</h5>   
+                        </div>
+                         <div class="content" style="background: #EEE9E9;">
+                         <div class="row">
+                               
+                                  <!--  <h5 class="col-sm-10 col-sm-offset-1 title">Date</h5> -->
+                                     <label type="text" ><b>Date:</b></label><label type="text" id="dateval6" ></label><br></br>
+                                        <label type="text" ><b>No.Of Instruments:</b></label><label type="text" id="noofins6" ></label><br></br>
+                                 
+                                        <label  ><b>Amount:</b></label><label type="text" id="amo6" ></label><br></br>
+                                    <label class="header" style="background-color:#2684B7 ;color: #fff; text-align:center; font-size: small;">
+                                    <b>-- Sent To NPCI --</b></label><br></br>
+                                <div >
+                                    <!-- <h6>No.Of Instruments</h6> -->
+                                       <label type="text" ><b>No.Of Instruments:</b></label><label type="text" id="noofins7" ></label><br></br>
+                                </div>
+                                <div class="col-sm-6">
+                                  <!--   <h6>Amount</h6> -->
+                                   <label type="text" ><b>Amount:</b></label><label type="text" id="amo7" ></label><br></br>
+                                </div>
+                               
+                               <div class="tooltip">
+                                <label class="header" style="background-color:#2684B7 ;color: #fff; text-align:center; font-size: small;" 
+                                 >
+									<b>- Accepted By NPCI -</b></label><br></br>
+									 <span class="tooltiptext" >Information will only appear here if the response has been read</span>
+                             
+                                </div>
+                                <div >
+                                  <!--   <h6>No.Of Instruments</h6> -->
+                                   <label type="text" ><b>No.Of Instruments:</b></label><label type="text" id="noofins8" ></label><br></br>
+                                </div>
+                                <div class="col-sm-6">
+                                 <!--    <h6>Amount</h6> -->
+                                   <label type="text"  ><b>Amount:</b></label><label type="text" id="amo8" ></label>
+                                </div>
+                             <br/>
+                             <div  class="tooltip"> <label class="header" style="background-color:#2684B7 ;color: #fff; text-align:center; font-size: small;">
+                              <b>- OACK From NPCI -</b></label>
+                              <span class="tooltiptext" >Information will only appear here if the OACK has been read</span>
+                               <br></br>
+                              </div>  <div>
+                                    <!-- <h6>No.Of Instruments</h6> -->
+                                     <label type="text" ><b>No.Of Instruments:</b></label><label type="text" id="noofins_1" ></label><br></br>
+                                </div>
+                                <div class="col-sm-6">
+                                   <!--  <h6>Amount</h6> -->
+                                     <label type="text" ><b>Amount:</b></label><label type="text" id="amo_1" ></label>
+                                </div>
+                                <!--  <h5 class="col-sm-10 col-sm-offset-1 title">OACK From NPCI</h5>
+                                <div class="col-sm-4 col-sm-offset-1 oackfrmnpci-info">
+                                    <h6>No.Of Instruments</h6>
+                                </div>
+                                <div class="col-sm-6">
+                                    <h6>Amount</h6>
+                                </div> -->
+                            
+                            </div>
+                       
+                    </div>
+                </div>
+                <div>
+                        <div class="header" style="background: #2684B7;">
+                            <h5 style="background: #2684B7;color: #fff ; text-align:center">Return Inward</h5>   
+                        </div>
+                         <div class="content" style="background: #EEE9E9;">
+                         <div class="row">
+                               
+                                <label type="text" ><b>Date:</b></label> <label type="text" id="dateval9" ></label> <br></br>
+                                <label type="text" ><b>No.Of Instruments:</b></label><label type="text" id="noofins9" ></label><br></br>
+                                <label type="text" ><b>Amount:</b></label><label type="text" id="amo9" ></label>
+                              
+        <br></br>
+        
+         <div class="header" style="background: #2684B7;">
+                            <h5 style="background: #2684B7;color: #fff ; text-align:center">Positive Pay System</h5>   
+                        </div>
+               
+                                <label type="text" ><b>File Creation Pending:</b></label><label type="text" id="filepend" ></label><br></br>
+                                <label type="text" ><b>Send To NPCI:</b></label><label type="text" id="sndnpci" ></label><br></br>
+                               <label type="text" ><b>Accepted By NPCI:</b></label><label type="text" id="accptnpci" ></label><br></br>
+                                <label type="text" ><b>Rejected By NPCI:</b></label><label type="text" id="rejnpci" ></label>
+                              
+                              
+                              
+                                <!--    <h5 class="col-sm-10 col-sm-offset-1 title">Date</h5>
+                                     <h5 class="col-sm-10 col-sm-offset-1 title">No.Of Instruments</h5>
+                                      <h5 class="col-sm-10 col-sm-offset-1 title">Amount</h5> -->
+                                   <!--  <h5 class="col-sm-10 col-sm-offset-1 title">Sent To NPCI</h5>
+                                <div class="col-sm-4 col-sm-offset-1 senttonpci-info">
+                                    <h6>No.Of Instruments</h6>
+                                </div>
+                                <div class="col-sm-6">
+                                    <h6>Amount</h6>
+                                </div>
+                               
+                               <h5 class="col-sm-10 col-sm-offset-1 title">Accepted By NPCI</h5>
+                                <div class="col-sm-4 col-sm-offset-1 acceptednpci-info">
+                                    <h6>No.Of Instruments</h6>
+                                </div>
+                                <div class="col-sm-6">
+                                    <h6>Amount</h6>
+                                </div>
+                                 <h5 class="col-sm-10 col-sm-offset-1 title">OACK From NPCI</h5>
+                                <div class="col-sm-4 col-sm-offset-1 oackfrmnpci-info">
+                                    <h6>No.Of Instruments</h6>
+                                </div>
+                                <div class="col-sm-6">
+                                    <h6>Amount</h6>
+                                </div> -->
+                            
+                            </div>
+                       
+                    </div>
+                </div>
+            
+            </div>
+           
+            <!-- Begin Help -->
+                
+               
+            <!-- End Help -->
+            </div>
+        </div>
+        	<%
+				}
+				else
+					{
+					%>
+						<div style="height: 100%;margin-left: 0% " align="center">	
+							<br/><br/>
+							<div >
+							<b>
+							<font class="wrapper h1">LIST Software Pvt. Ltd. Sangli</font>
+							</b>
+							</div>
+							<br/>
+							<b><font class="wrapper h2">Cheque Truncation System</font></b>
+							<br/>
+							<img src="images/cts.jpg" style="width: 40%; "></img>
+							<div class="imgholder"></div>
+							<br/><br/><br/><br/>
+							<br/><br/>
+						</div>
+						<%
+						}
+						%>
+    </div>
+
+		
+		<input name="session_loginid" id="session_loginid" type="hidden" 
+			value="<%=session.getAttribute("session_loginid")%>"/>
+		<input type="hidden" id="loginstyle" name="loginstyle" value="<%=loginstyle%>"/>
+	
+</div>
+</div>
+<div id="footer">
+		<!-- <p>(c) 2014 Developed by <a href="http://listspl.co.in/"><label style="color:#FFFFFF; cursor:pointer;">LIST Software Pvt. Ltd.</label></a><a href="javascript:showLogin()"><label class="labels" style="color:#059BD8; cursor:pointer;"> &nbsp;&nbsp;Logout</label></a><br/></p>
+			Version 2017.1.0<br/> -->
+			<a href="javascript:showLogin()"><label style="color:#059BD8"> &nbsp;&nbsp;Logout</label> </a>
+			 <jsp:include page="footer.jsp"></jsp:include>
+</div>
+
+
+
+<%
+System.out.println("Message:"+msg);
+	try
+	{
+	if(msg.length()>0)
+	{%>
+	<input type="hidden" id="hdMsg1" name="hdMsg1" value="<%=msg%>"/>
+	<%}
+	else
+	{%>
+	<input type="hidden" id="hdMsg1" name="hdMsg1" value="N"/>
+	<%}
+	}
+	catch(NullPointerException npe)
+	{%>
+	<input type="hidden" id="hdMsg1" name="hdMsg1" value="N"/>
+	<%
+	System.out.println("Message to be displayed on form is null");
+	}
+%>
+</body>
+</html>

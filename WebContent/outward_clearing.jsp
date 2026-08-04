@@ -1,0 +1,476 @@
+<!-- <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"> -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<%@page import="cts.*"%>
+<%@page import="java.sql.*"%>
+<%@page import="java.io.*"%>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="EN" lang="EN" dir="ltr">
+<head profile="http://gmpg.org/xfn/11">
+<title>CTS : Outward Clearing</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<meta http-equiv="imagetoolbar" content="no" />
+
+<link rel="stylesheet" href="styles/layout.css" type="text/css" />
+<link rel="stylesheet" href="codebase/dhtmlx.css" />
+<link rel="stylesheet" href="bootstrap/css/bootstrap.css" type="text/css" />
+<link rel="stylesheet" href="css/main.css" type="text/css" />
+<link rel="stylesheet" href="css/menu.css" type="text/css" />
+
+<script type="text/javascript" src="js/jquery-1.11.3.min.js"></script>
+<script src="bootstrap/js/bootstrap.min.js"></script>
+<script src="codebase/dhtmlx.js"></script>
+<script src="codebase/dhtmlxgrid_json.js"></script>
+<script src="js/outward_clearing.js"></script>
+
+</head>
+<%	
+	String msg="",retStr="NA";
+	String userRole="",doICallAjax="";
+	String branchCode=(String)session.getAttribute("session_branch_code");
+	String main_br_yn=(String)session.getAttribute("session_main_br_yn");
+	Connection con=Configuration.getConnection();
+	String CFG_uploadpath_to_CHI=Configuration.getConfValByNm("CFG_uploadpath_to_CHI",con);
+	String CFG_FLTYMICR_POPUP=Configuration.getConfValByNm("CFG_FLTYMICR_POPUP", con);
+	String loginstyle=Configuration.getConfValByNm("CFG_LOGINSTYLE", con);
+	String pickstyle=Configuration.getConfValByNm("CFG_OUTWARD_PICKUPSTYLE", con);
+	con.close();
+	try
+	{
+		System.out.println("------------- in outward_clearing design ############# branchCode"+branchCode+" main_br_yn="+main_br_yn);
+		msg=request.getParameter("msg").trim();	
+		System.out.println("msg-------"+msg);
+		
+	}
+	catch(NullPointerException npe)
+	{
+		msg="N";
+		System.out.println("Message to be displayed on outward_clearing msg is null");		
+	}	
+	
+	
+	try
+	{
+		userRole=session.getAttribute("session_user_role").toString();
+		System.out.println("######################## userRole:"+userRole+"#####");
+		retStr=request.getParameter("retStr").trim();
+		System.out.println("retStr@@@@@@@@@@@@@retStr==="+retStr);
+	}
+	catch(NullPointerException npe)
+	{
+		System.out.println("Message to be displayed on outward_clearing userRole is null");		
+	}	
+	
+	try
+	{
+		//	doICallAjax="N";
+		/*File upFile=new File(Configuration.getConfValByNm("CFG_uploadpath_to_CHI")+branchCode+"/ClearingOutward/MICR Waveforms/chequedetails.txt");
+		System.out.println("\n\nupFile.length()"+upFile.length());
+		   
+		if(upFile.length()>0 )
+		{
+			doICallAjax="N";
+		}
+		else
+		{
+			doICallAjax="Y";
+		}
+		*/
+		/*Connection con=(Connection)session.getAttribute("session_connection");
+		
+		//String query = "Select count(*) from CLEARINGOUTWARD where CLO_BRANCH_CD='"+branchCode+"' and CLO_DATE_DDMMYYYY='"+Configuration.getDDMMYYYY()+"' and CLO_CONVERT_FLG ='N'";
+		String query = "Select count(*) from CLEARINGOUTWARD where CLO_BRANCH_CD='"+branchCode+"' and CLO_DATE_DDMMYYYY='"+Configuration.getDDMMYYYY()+"' and CLO_CONVERT_FLG ='N' and CLO_IMG_FRNT_BW IS NOT null and CLO_IMG_BACK_BW IS NOT null and CLO_IMG_FRNT_GR IS NOT null and CLO_IMG_BACK_GR IS NOT null";
+		int co_count = 0;
+		PreparedStatement ps = con.prepareStatement(query);
+		ResultSet rs=ps.executeQuery();
+		
+		while(rs.next())
+		{
+			co_count = rs.getInt(1);
+		}
+		if(co_count > 0)
+		{
+			doICallAjax="N";
+		}
+		else
+		{
+			//now check 
+			doICallAjax="Y";
+		}*/
+		doICallAjax="Y";
+		System.out.println("doICallAjax:::"+doICallAjax);	
+		
+		
+	}
+	catch(Exception e)
+	{
+		System.out.println("Exception:::"+e);		
+	}
+		
+%>
+<%
+try
+{
+%>
+<body id="top" onload="getClearingOutwardFile()">
+
+<!--<form name="formid" id="formid"  method="post">	 -->
+
+
+<jsp:include page="menu.jsp">
+	<jsp:param name="htitle" value="MAIN" />
+</jsp:include>
+
+<div id="para_form" style="border-radius: 11px 11px 11px 11px;position:absolute;width:70%;height:60%;top:30%;bottom:0%;left:20%;right:10%;border:#666666;z-index:5;background-color:rgba(213,213,229,.9);display:none;border-style:solid;">						
+
+	<center>
+	<div style="position:absolute; height:5%; width:100%; top:0%; left:0%; right:0%; bottom:0%; z-index:5" align="right"> 
+	  <img src="images/close.png"  align="right" style="z-index:2" onClick="closeWindow()">
+	</div>
+	  <iframe id="center_frm" style="width:100%;height:100%; position:absolute; float:left; right:0%;left:0%; top:0%; bottom:0%;  margin:0; padding:0; " ><br>
+
+	   </iframe>
+	</center>
+</div>
+
+<div id="popupDiv" style="border-radius: 11px 11px 11px 11px;position:absolute;width:100%;height:100%;top:0%;bottom:0%;left:0%;right:0%;border:#666666;z-index:15;background-color:rgba(213,213,229,.9);border-style:solid;display: none;">						
+
+					<center>
+						<img id="img_popup" style="width:45%;height:22%" src="images/noimagefound.jpg"></img>
+						<table>
+							<tr>
+								
+								<td align="right">
+									<img  id="btBack" name="btBack" src="images\left.png" onclick="backButnClicked()" />
+								</td>
+								<td align="left">
+									<img id="btNext" name="btNext" src="images\right.png" onclick="nextButnClicked()" />
+								</td>
+							</tr>
+						</table>
+						<table width="100%" >
+						<tr>
+							<td >
+							<div align="center" style="border-width:2px;border-style:solid;border-color:black;align:center;height:200px; width:400px; top:25%;">
+									<label style="font-weight:bolder;font-size:large;color: black;">Scanned Cheques Data</label>
+								<div id="redMicrgrid" style="height: 170px; width: 290px;top:40%"></div></div>
+							</td>
+							<td>
+							<div align="center" style="border-width:2px;border-style:solid;border-color:black;align:center;height:200px; width:800px; top:25%;">
+									<label style="font-weight:bolder;font-size:large;color: black;">CBS File Data</label>
+								<div id="redDatagrid" style="height: 170px; width: 670px;top:40%"></div></div>
+							</td>
+						</tr>
+						</table>
+						
+						<table>
+							<tr>
+								<td align="right">
+									<input type="button" name="updateAll" id="updateAll" value="Update All" onclick="updateAllCheques()" />
+								</td>
+								<td align="left">
+									<input type="button" name="closePopUp" id="closePopUp" value="Close" onclick="document.getElementById('popupDiv').style.display='none'" />
+								</td>
+							</tr>
+						</table>
+						
+					</center>
+					</div>
+					<div id="popupDiv1" style="border-radius: 11px 11px 11px 11px;position:absolute;width:100%;height:100%;top:0%;bottom:0%;left:0%;right:0%;border:#666666;z-index:15;background-color:rgba(213,213,229,.9);border-style:solid;display: none">						
+
+					<center>
+						<img id="img_popup1" style="width:45%;height:22%" src="images/noimagefound.jpg"></img>
+						<table>
+							<tr>
+								<td align="right">
+									<input type="button" name="updateA" id="update" value="Update" onclick="updateDupCheques()" />
+								</td>
+								<td align="left">
+									<input type="button" name="closePopUp" id="closePopUp" value="Close" onclick="document.getElementById('popupDiv1').style.display='none'" />
+								</td>
+							</tr>
+						</table>
+						<table>
+							<tr>
+								<td align="right">
+									<img  id="btBack1" name="btBack1" src="images\left.png" onclick="backButnClicked1()" />
+								</td>
+								<td align="left">
+									<img id="btNext1" name="btNext1" src="images\right.png" onclick="nextButnClicked1()" />
+								</td>
+							</tr>
+						</table>
+						<table >
+						<tr>
+							<td >
+								<div id="redMicrgrid1" style="height: 250px; width: 200px; top:40%"></div>
+							</td>
+							
+							<td align="left">
+							
+								<div align="center"  style="border-width:2px;border-style:solid;border-color:black;align:center;height:350px; width:700px; top:35%;left:35%;">
+									<label style="font-weight:bolder;font-size:large;color: black;">Duplicate Cheques Data</label>
+									<div id="readDupdata" align="center" style="height: 250px; width:570px; top:40%;left:40%; align:center;"></div></div>
+				</td>
+			</tr>
+		</table>						
+	</center>
+</div>
+
+<div class="wrapper col3" >
+  <!--<div id="container_chq" style="border-color:#FF0000; border-style:solid">-->
+  <h1>Clearing Outward</h1>
+  
+  <div  class="fl_center" align="center">
+	  	<div id="yespickfile">
+				<input type="file" id="file_pick" name="file_pick[]" size="80" multiple="multiple" />
+				<input type="hidden" id="filenames" name="filenames" value=""/>
+					<input type="hidden" id="retStr" name="retStr" value="<%=retStr%>"/>
+				<input id="submitbutton" name="submitbtn"  type="button" value="Upload Files" onclick="uploadFiles()" />
+			
+				<br/><br/>
+		</div>
+	</div>
+  
+  <div id="Nopickfile">
+  <table id="tab_co_stats" border="1">
+			<tr id="col_header_row">
+						<td ><label style="font-weight:bold">Total No. Of Cheques</label></td>
+						<td><label style="font-weight:bold">Total Amount</label></td>
+						<td><label style="font-weight:bold">No. Of Selected Cheques</label></td>
+						<td><label style="font-weight:bold">Total Amount Of Selected Cheques</label></td>
+						
+			</tr>
+			<tr id="col_value_row" >
+						<td><input type="text"   value="0" style="border: #505050" readonly="true"  id="txt_tot_no_of_chq"/></td>
+						<td><input type="text"  value="0" style="border: #505050" readonly="true"  id="txt_tot_amt" /></td>
+						<td><input type="text"  value="0" style="border: #505050" readonly="true"  id="txt_no_of_sel_chq" /></td>
+						<td><input type="text"  value="0" style="border: #505050;" readonly="true"  id="txt_tot_amt_sel_chq"/></td>
+			</tr>
+			
+			
+	</table>
+  <table id="tab_co_errorLog" border="1"  style="display:none">
+  	<tr id="col_error_row">
+		<td><input type="text" name="txt_error" id="txt_error" style="border:#505050" value="empty"/></td>	
+	</tr>
+  </table>
+	<table width="95%" height="99%" border="1" cellspacing="1" cellpadding="1">
+		<tr>
+		<td width="30%" align="right">
+			<div id="div_out_chq" style="height:80%">				
+				<table id="tab_out_chq" cellpadding="0"  cellspacing="0" border="1" align="center" style="border-color:#FFFFFF; width:100%; ">
+						<tr>
+						
+							<td><label style="font-weight:bold">ChequeNo_SortCode:PayeeName</label>
+							</td>
+					<%
+						if(userRole.indexOf("C") > -1)
+							{
+					%>
+							<td colspan="2" align="center"><label style="font-weight:bold">Select All</label><input id="chk_selall" type="checkbox" onClick="toggle_out_clearing(this)" title="Select All"/>
+							</td> 
+					<%
+							}
+					%>				
+						<td align="center">
+						<label style="font-weight:bold">Sr.No.</label>
+						</td>		
+						</tr>
+				</table>
+			</div>	
+			<div class="fl_right" style="height:10%">
+					<!--<input id="submitbutton_download" type="button" name="btn_save_convert" value="Save & Upload" onclick="save_con_outwardchqs()" />-->
+				<label id="lbl_indicator" style="color:#FF0000">(Red Background indicates : Cheque Not Scanned)</label>	
+					
+					<input type="button" name="btn_save_convert" id="submitbutton" value="Save & Upload" onclick="save_con_outwardchqs()" />
+					
+			</div>
+		</td>
+		<td width="70%">
+			<div id="div_cheque" style="width:100%;height:100%;position:relative;zIndex:1">	
+			
+				<fieldset>
+				
+					<!--<div class="fl_left">-->
+					<div style="display: none" >
+						<table>
+							<tr style="display: none;">
+								<td><font class="wrapper h2"><label style="font-weight:bold">Front</label></font>
+								</td>
+								<td><font class="wrapper h2"><label style="font-weight:bold">Back</label></font>
+								</td>
+							<!--	<td><font class="wrapper h2">Front Grey scale</font>
+								</td>
+								-->
+							</tr>
+						        	
+						        	
+							<tr >
+								<td style="width:20%;height:20%">
+									<img id = "img_frnt" style="width:100%;height:10%" onclick="enlargeCheque_outwardchqs('img_frnt')" title="Click To Enlarge">  
+								</td>
+								<td style="width:20%;height:20%">
+									<img id = "img_back"  style="width:100%;height:10%" onclick="enlargeCheque_outwardchqs('img_back')" title="Click To Enlarge">  
+									
+								</td>
+								<!--<td style="width:20%;height:20%">
+									<img id = "img_frnt_grey"  style="width:100%;height:10%" onclick="enlargeCheque_outwardchqs('img_frnt_grey')" title="Click To Enlarge">  
+								</td>-->
+							</tr>
+						</table>
+						
+					</div>
+					
+					<!--<div class="fl_left" >-->
+					<div>
+						<table>
+							<tr>
+								<td style="width:90%;height:100%">
+								<img id="img_enlarged" style="width:90%;height:55% image-rendering: auto; image-rendering: crisp-edges;image-rendering: pixelated;">  
+								</img></td>
+								
+								<td >
+									<table >
+										<tr>
+											<td>
+												<img id="btNext" name="btNext" src="images\right.png" onclick="nextButnClicked()" />
+											</td>
+											
+										</tr>
+										</table>
+										<table></table>
+										<table>
+										<tr>
+											<td>
+												<img  id="btBack" name="btBack" src="images\left.png" onclick="backButnClicked()" />
+											</td>
+										</tr>
+									</table>																										
+								</td>
+								</tr>
+						<!-- 		<tr>
+								<td >
+									<table>
+										<tr>
+											<td>
+												<input type="button" id="btNext" name="btNext" value=">>" onclick="nextButnClicked()" />
+											</td>
+											<td>
+												<input type="button" id="btBack" name="btBack" value="<<" onclick="backButnClicked()"/>
+											</td>
+										</tr>
+									</table>																										
+								</td>
+							</tr> -->
+						</table>
+					</div>
+					<div style="float:left;width:100%">
+						<table border="1" id="tab_co_cbs_data" style="width:100%" cellpadding="0" cellspacing="0">
+								<tr id="tr_header">
+									<td>Cheque No</td>
+									<td>BOFD</td>
+									<td>Sort Code</td>
+									<td>Tran Code</td>
+									<td>Amount(in Rs.)</td>
+									<td>Account Number</td>
+									<td>Payee Name</td>
+									<td>Clearing Type</td>
+									<td>P2F</td>
+								</tr>																	
+							</table>
+					</div>
+					<div >
+					<table style="float:left;width:100%">
+						<tr>
+							<td><input type="button" name="btn_update_record" id="btn_update_record" value="Update Record" onclick="update_co_cbs_outwardchqs()"/></td>
+							<td id="txtForP2F_TD" style="font-weight:bold">
+							<input type="text" name="txtForP2F" id="txtForP2F" value="" size="50" disabled="disabled" 
+							style="border:none;"/>							</td>
+						</tr>
+					</table>
+				<table style="float:left;width:100%">
+					<tr>
+						<td align="center">
+			<label style="font-family:'Times New Roman', Times, serif;font-size:16px;text-decoration:blink;color:#FF0000">
+					<a href="#" onclick="show_warning()" style="color:#FF0000;text-decoration:underline">Warning</a>
+						  </label>
+						</td>
+					</tr>
+				</table>
+				</div>
+					
+					
+					<!--<table border="2" id="tab_co_chq_status">
+						<tr id="tr_chq_status">
+							<td>Status:</td>
+							<td><input type="text" id="txtChqStatus" name="txtChqStatus"/></td>
+						</tr>																	
+					</table>-->
+				</fieldset>
+				
+			</div>
+					
+		</td>		
+		</tr>
+	</table>
+		
+<!--  </div>-->
+</div>
+</div>
+<input type="hidden" id="rcnt" name="rcnt" value="1"/>
+
+<input type="hidden" id="txt_hdnIsRedBackground" name="txt_hdnIsRedBackground" value="FALSE"/>
+<input type="hidden" id="txt_hdnRedBackgroundVal" name="txt_hdnRedBackgroundVal" value="0"/>
+
+<input type="hidden" id="hd_selectCnt" name="hd_selectCnt" value="1"/>
+<input type="hidden" id="hd_up_path" name="hd_up_path" value="<%=CFG_uploadpath_to_CHI%>"/>
+<input type="hidden" id="hd_doICallAjax" name="hd_doICallAjax" value="<%=doICallAjax%>"/>
+<input type="hidden" id="hd_faultyMICR_poppup" name="hd_faultyMICR_poppup" value="<%=CFG_FLTYMICR_POPUP%>"/>
+<input name="session_branch_code" id="session_branch_code" type="hidden" value="<%=branchCode%>">	
+<input name="session_branch_main" id="session_branch_main" type="hidden" value="<%=main_br_yn%>">	
+<input name="session_loginid" id="session_loginid" type="hidden" value="<%=session.getAttribute("session_loginid")%>">	
+<input name="session_user_role" id="session_user_role" type="hidden" value="<%=session.getAttribute("session_user_role")%>">
+		
+<input name="fileName" id="fileName" type="hidden" />
+<input name="jsonString" id="jsonString" type="hidden" />
+<input name="micrData" id="micrData" type="hidden" />	
+<input type="hidden" id="loginstyle" name="loginstyle" value="<%=loginstyle%>"/>	
+
+<input type="hidden" id="pickstyle" name="pickstyle" value="<%=pickstyle%>"/>
+<input name="blokedFlag" id="blokedFlag" type="hidden"  value="CHECK"/>	
+
+<div id="footer">
+ <a href="javascript:showLogin()"><label style="color:#059BD8">Logout</label></a>
+  <jsp:include page="footer.jsp"></jsp:include></div>
+
+<%
+//System.out.println("Message:"+msg);
+	try
+	{
+	if(msg.length()>0)
+	{%>
+	<input type="hidden" id="hdMsg1" name="hdMsg1" value="<%=msg%>"/>
+	<%}
+	else
+	{%>
+	<input type="hidden" id="hdMsg1" name="hdMsg1" value="N"/>
+	<%}
+	}
+	catch(NullPointerException npe)
+	{%>
+	<input type="hidden" id="hdMsg1" name="hdMsg1" value="N"/>
+	<%
+	System.out.println("Message to be displayed on form is null");
+	}
+%>
+
+<!--</form>-->
+</body>
+<%
+}
+catch(Exception e)
+{
+	System.out.println("Outward Clearing body try catch :"+e);
+}
+%>
+</html>

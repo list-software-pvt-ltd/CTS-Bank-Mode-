@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><rows>
+<row id="1">
+<cell id="FILE_ID" image="folder.gif">1</cell>
+<cell id="MAIN_ID" image="folder.gif"/>
+<cell id="FILE_TYPE" image="folder.gif">Inward</cell>
+<cell id="FILENAME" image="folder.gif"/>
+<cell id="DOWNLOAD_FLAG" image="folder.gif"/>
+<cell id="dummy1">0</cell>
+<row id="2">
+<cell id="FILE_ID" image="folder.gif">2</cell>
+<cell id="MAIN_ID" image="folder.gif">1</cell>
+<cell id="FILE_TYPE" image="folder.gif">Clearing Inward</cell>
+<cell id="FILENAME" image="folder.gif"/>
+<cell id="DOWNLOAD_FLAG" image="folder.gif"/>
+<cell id="dummy1">0</cell>
+</row>
+<row id="3">
+<cell id="FILE_ID" image="folder.gif">3</cell>
+<cell id="MAIN_ID" image="folder.gif">1</cell>
+<cell id="FILE_TYPE" image="folder.gif">Return Inward</cell>
+<cell id="FILENAME" image="folder.gif"/>
+<cell id="DOWNLOAD_FLAG" image="folder.gif"/>
+<cell id="dummy1">0</cell>
+</row>
+</row>
+<row id="4">
+<cell id="FILE_ID" image="folder.gif">4</cell>
+<cell id="MAIN_ID" image="folder.gif"/>
+<cell id="FILE_TYPE" image="folder.gif">OACK</cell>
+<cell id="FILENAME" image="folder.gif"/>
+<cell id="DOWNLOAD_FLAG" image="folder.gif"/>
+<cell id="dummy1">0</cell>
+<row id="5">
+<cell id="FILE_ID" image="folder.gif">5</cell>
+<cell id="MAIN_ID" image="folder.gif">4</cell>
+<cell id="FILE_TYPE" image="folder.gif">Clearing Outward</cell>
+<cell id="FILENAME" image="folder.gif"/>
+<cell id="DOWNLOAD_FLAG" image="folder.gif"/>
+<cell id="dummy1">0</cell>
+<row id="6">
+<cell id="FILE_ID" image="folder.gif">124</cell>
+<cell id="MAIN_ID" image="folder.gif">5</cell>
+<cell id="FILE_TYPE" image="folder.gif"/>
+<cell id="FILENAME" image="folder.gif">CXF_413597000_20112019_162843_01_00000001.XML.1.20112019.OACK</cell>
+<cell id="DOWNLOAD_FLAG" image="folder.gif">Yes</cell>
+<cell id="dummy1">0</cell>
+</row>
+</row>
+<row id="7">
+<cell id="FILE_ID" image="folder.gif">6</cell>
+<cell id="MAIN_ID" image="folder.gif">4</cell>
+<cell id="FILE_TYPE" image="folder.gif">Return Outward</cell>
+<cell id="FILENAME" image="folder.gif"/>
+<cell id="DOWNLOAD_FLAG" image="folder.gif"/>
+<cell id="dummy1">0</cell>
+<row id="8">
+<cell id="FILE_ID" image="folder.gif">126</cell>
+<cell id="MAIN_ID" image="folder.gif">6</cell>
+<cell id="FILE_TYPE" image="folder.gif"/>
+<cell id="FILENAME" image="folder.gif">RRF_413597000_21112019_133423_01.XML.3.21112019.OACK</cell>
+<cell id="DOWNLOAD_FLAG" image="folder.gif">No</cell>
+<cell id="dummy1">0</cell>
+</row>
+</row>
+</row>
+<row id="9">
+<cell id="FILE_ID" image="folder.gif">7</cell>
+<cell id="MAIN_ID" image="folder.gif"/>
+<cell id="FILE_TYPE" image="folder.gif">Response</cell>
+<cell id="FILENAME" image="folder.gif"/>
+<cell id="DOWNLOAD_FLAG" image="folder.gif"/>
+<cell id="dummy1">0</cell>
+<row id="10">
+<cell id="FILE_ID" image="folder.gif">8</cell>
+<cell id="MAIN_ID" image="folder.gif">7</cell>
+<cell id="FILE_TYPE" image="folder.gif">Clearing Outward</cell>
+<cell id="FILENAME" image="folder.gif"/>
+<cell id="DOWNLOAD_FLAG" image="folder.gif"/>
+<cell id="dummy1">0</cell>
+<row id="11">
+<cell id="FILE_ID" image="folder.gif">125</cell>
+<cell id="MAIN_ID" image="folder.gif">8</cell>
+<cell id="FILE_TYPE" image="folder.gif"/>
+<cell id="FILENAME" image="folder.gif">CXF_413597000_21112019_162934_01_00000001.XML.1.RES</cell>
+<cell id="DOWNLOAD_FLAG" image="folder.gif">No</cell>
+<cell id="dummy1">0</cell>
+</row>
+</row>
+<row id="12">
+<cell id="FILE_ID" image="folder.gif">9</cell>
+<cell id="MAIN_ID" image="folder.gif">7</cell>
+<cell id="FILE_TYPE" image="folder.gif">Return Outward</cell>
+<cell id="FILENAME" image="folder.gif"/>
+<cell id="DOWNLOAD_FLAG" image="folder.gif"/>
+<cell id="dummy1">0</cell>
+</row>
+</row>
+</rows>

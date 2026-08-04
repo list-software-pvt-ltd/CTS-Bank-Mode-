@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><rows>
+<row id="1">
+<cell id="FILE_ID" image="folder.gif">1</cell>
+<cell id="MAIN_ID" image="folder.gif"/>
+<cell id="FILE_TYPE" image="folder.gif">Inward</cell>
+<cell id="FILENAME" image="folder.gif"/>
+<cell id="DOWNLOAD_FLAG" image="folder.gif"/>
+<cell id="dummy1">0</cell>
+<row id="2">
+<cell id="FILE_ID" image="folder.gif">2</cell>
+<cell id="MAIN_ID" image="folder.gif">1</cell>
+<cell id="FILE_TYPE" image="folder.gif">Clearing Inward</cell>
+<cell id="FILENAME" image="folder.gif"/>
+<cell id="DOWNLOAD_FLAG" image="folder.gif"/>
+<cell id="dummy1">0</cell>
+<row id="3">
+<cell id="FILE_ID" image="folder.gif">200</cell>
+<cell id="MAIN_ID" image="folder.gif">2</cell>
+<cell id="FILE_TYPE" image="folder.gif"/>
+<cell id="FILENAME" image="folder.gif">BPIBF_413597000_1_20112019_20112019_195630_879180_00.img</cell>
+<cell id="DOWNLOAD_FLAG" image="folder.gif">No</cell>
+<cell id="dummy1">0</cell>
+</row>
+<row id="4">
+<cell id="FILE_ID" image="folder.gif">201</cell>
+<cell id="MAIN_ID" image="folder.gif">2</cell>
+<cell id="FILE_TYPE" image="folder.gif"/>
+<cell id="FILENAME" image="folder.gif">BPIBF_413597000_1_20112019_20112019_195630_879181_00.img</cell>
+<cell id="DOWNLOAD_FLAG" image="folder.gif">No</cell>
+<cell id="dummy1">0</cell>
+</row>
+<row id="5">
+<cell id="FILE_ID" image="folder.gif">202</cell>
+<cell id="MAIN_ID" image="folder.gif">2</cell>
+<cell id="FILE_TYPE" image="folder.gif"/>
+<cell id="FILENAME" image="folder.gif">BPIBF_413597000_1_20112019_20112019_195630_879182_00.img</cell>
+<cell id="DOWNLOAD_FLAG" image="folder.gif">No</cell>
+<cell id="dummy1">0</cell>
+</row>
+<row id="6">
+<cell id="FILE_ID" image="folder.gif">203</cell>
+<cell id="MAIN_ID" image="folder.gif">2</cell>
+<cell id="FILE_TYPE" image="folder.gif"/>
+<cell id="FILENAME" image="folder.gif">BPXF_413597000_1_20112019_20112019_195630_879180.XML</cell>
+<cell id="DOWNLOAD_FLAG" image="folder.gif">No</cell>
+<cell id="dummy1">0</cell>
+</row>
+<row id="7">
+<cell id="FILE_ID" image="folder.gif">204</cell>
+<cell id="MAIN_ID" image="folder.gif">2</cell>
+<cell id="FILE_TYPE" image="folder.gif"/>
+<cell id="FILENAME" image="folder.gif">BPXF_413597000_1_20112019_20112019_195630_879181.XML</cell>
+<cell id="DOWNLOAD_FLAG" image="folder.gif">No</cell>
+<cell id="dummy1">0</cell>
+</row>
+<row id="8">
+<cell id="FILE_ID" image="folder.gif">205</cell>
+<cell id="MAIN_ID" image="folder.gif">2</cell>
+<cell id="FILE_TYPE" image="folder.gif"/>
+<cell id="FILENAME" image="folder.gif">BPXF_413597000_1_20112019_20112019_195630_879182.XML</cell>
+<cell id="DOWNLOAD_FLAG" image="folder.gif">No</cell>
+<cell id="dummy1">0</cell>
+</row>
+</row>
+<row id="9">
+<cell id="FILE_ID" image="folder.gif">3</cell>
+<cell id="MAIN_ID" image="folder.gif">1</cell>
+<cell id="FILE_TYPE" image="folder.gif">Return Inward</cell>
+<cell id="FILENAME" image="folder.gif"/>
+<cell id="DOWNLOAD_FLAG" image="folder.gif"/>
+<cell id="dummy1">0</cell>
+</row>
+</row>
+<row id="10">
+<cell id="FILE_ID" image="folder.gif">4</cell>
+<cell id="MAIN_ID" image="folder.gif"/>
+<cell id="FILE_TYPE" image="folder.gif">OACK</cell>
+<cell id="FILENAME" image="folder.gif"/>
+<cell id="DOWNLOAD_FLAG" image="folder.gif"/>
+<cell id="dummy1">0</cell>
+<row id="11">
+<cell id="FILE_ID" image="folder.gif">5</cell>
+<cell id="MAIN_ID" image="folder.gif">4</cell>
+<cell id="FILE_TYPE" image="folder.gif">Clearing Outward</cell>
+<cell id="FILENAME" image="folder.gif"/>
+<cell id="DOWNLOAD_FLAG" image="folder.gif"/>
+<cell id="dummy1">0</cell>
+</row>
+<row id="12">
+<cell id="FILE_ID" image="folder.gif">6</cell>
+<cell id="MAIN_ID" image="folder.gif">4</cell>
+<cell id="FILE_TYPE" image="folder.gif">Return Outward</cell>
+<cell id="FILENAME" image="folder.gif"/>
+<cell id="DOWNLOAD_FLAG" image="folder.gif"/>
+<cell id="dummy1">0</cell>
+</row>
+</row>
+<row id="13">
+<cell id="FILE_ID" image="folder.gif">7</cell>
+<cell id="MAIN_ID" image="folder.gif"/>
+<cell id="FILE_TYPE" image="folder.gif">Response</cell>
+<cell id="FILENAME" image="folder.gif"/>
+<cell id="DOWNLOAD_FLAG" image="folder.gif"/>
+<cell id="dummy1">0</cell>
+<row id="14">
+<cell id="FILE_ID" image="folder.gif">8</cell>
+<cell id="MAIN_ID" image="folder.gif">7</cell>
+<cell id="FILE_TYPE" image="folder.gif">Clearing Outward</cell>
+<cell id="FILENAME" image="folder.gif"/>
+<cell id="DOWNLOAD_FLAG" image="folder.gif"/>
+<cell id="dummy1">0</cell>
+</row>
+<row id="15">
+<cell id="FILE_ID" image="folder.gif">9</cell>
+<cell id="MAIN_ID" image="folder.gif">7</cell>
+<cell id="FILE_TYPE" image="folder.gif">Return Outward</cell>
+<cell id="FILENAME" image="folder.gif"/>
+<cell id="DOWNLOAD_FLAG" image="folder.gif"/>
+<cell id="dummy1">0</cell>
+</row>
+</row>
+</rows>

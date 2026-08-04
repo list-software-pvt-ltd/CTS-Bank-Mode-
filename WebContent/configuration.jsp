@@ -1,0 +1,304 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<%@page import="cts.*"%>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="EN" lang="EN" dir="ltr">
+<head profile="http://gmpg.org/xfn/11">
+<title>CTS : Configuration</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<meta http-equiv="imagetoolbar" content="no" />
+<link rel="stylesheet" href="styles/layout.css" type="text/css" />
+<script src="js/jquery-1.11.3.min.js"></script>
+<script src="js/main.js"></script>
+</head>
+<%@page import="java.sql.*"%>
+<%@page import="cts.*"%>
+<%
+	String msg="";
+String loginstyle="";
+	try
+	{
+		Connection cn=null;
+		cn=Configuration.getConnection();
+		 loginstyle=Configuration.getConfValByNm("CFG_LOGINSTYLE", cn);
+		 cn.close();
+		msg=request.getParameter("msg").trim();
+	}
+	catch(NullPointerException npe)
+	{
+		System.out.println("Message to be displayed on login form is null");		
+	}	
+%>
+<body id="top" onload="onLoad_config()">
+
+<jsp:include page="menu.jsp">
+	<jsp:param name="hconfig" value="MAIN" />
+</jsp:include>
+
+
+	
+<div class="wrapper col3">
+  <div id="container_chq">
+  <table>
+   		<tr style="width:100%">
+			<td colspan="4"><h2>Configuration !</h2>
+			</td>
+	  	</tr>
+		
+		<tr style="width:100%">
+			<td style="width:25%" align="right" >
+				<label><font color="#FF0000">*</font>Bank Code :</label>
+			</td>
+			<td style="width:25%" align="left">
+				<input type="text" name="txt_bankcode" id="txt_bankcode" onfocus="onTextFocus()"/>
+			</td>
+			<td style="width:25%" align="right">
+				<label>Our Version No.:</label>
+			</td>
+			<td style="width:25%" align="left">
+				<input type="text" name="txt_our_verno" id="txt_our_verno" disabled="disabled" onfocus="onTextFocus()"/>
+			</td>
+			
+		</tr>
+		
+		<tr style="width:100%">
+			<td style="width:25%" align="right">
+				<label><font color="#FF0000">*</font>Upload File Path (To CHI) :</label>
+			</td>
+			<td style="width:25%" align="left">
+		<!--	<input type="text" value="" name="hd_uploadpath_to_chi" id="hd_uploadpath_to_chi"/>
+<input id="txt_uploadpath_to_chi" name="txt_uploadpath_to_chi" type="file" size="60" onchange="onBrowseFile()" />-->
+				<input type="text" name="txt_uploadpath_to_chi" id="txt_uploadpath_to_chi" onfocus="onTextFocus()"/>
+			</td>
+			<td style="width:25%" align="right">
+				<label><font color="#FF0000">*</font>Download File Path (From CHI) :</label>
+			</td>
+			<td style="width:25%" align="left">
+				<input type="text" name="txt_downloadpath_from_chi" id="txt_downloadpath_from_chi" onfocus="onTextFocus()"/>
+			</td>
+	  	</tr>
+		
+		<tr style="width:100%">
+			<td style="width:25%" align="right">
+				<label><font color="#FF0000">*</font>Upload File Archive Path (To CHI) :</label>
+			</td>
+			<td style="width:25%" align="left">
+				<input type="text" name="txt_arch_uploadpath_to_chi" id="txt_arch_uploadpath_to_chi"/>
+			</td>
+			<td style="width:25%" align="right">
+				<label><font color="#FF0000">*</font>Download File Archive Path (From CHI) :</label>
+			</td>
+			<td style="width:25%" align="left">
+				<input type="text" name="txt_arch_downloadpath_from_chi" id="txt_arch_downloadpath_from_chi" onfocus="onTextFocus()"/>
+			</td>	
+	  	</tr>
+		
+		<tr style="width:100%">
+			<td style="width:25%" align="right">
+				<label style="font-weight:bold">Security Originator Name :</label>
+			</td>
+			<td style="width:25%" align="left">
+				<input type="text" name="txt_sec_orgin_name" id="txt_sec_orgin_name" disabled="disabled" onfocus="onTextFocus()"/>
+			</td>
+			<td style="width:25%" align="right">
+				<label style="font-weight:bold">Security  Name :</label>
+			</td>
+			<td style="width:25%" align="left">
+				<input type="text" name="txt_sec_auth_name" id="txt_sec_auth_name" disabled="disabled" onfocus="onTextFocus()"/>
+			</td>
+	  	</tr>
+	
+		<tr style="width:100%; display: none;">
+	
+			<td style="width:25%" align="right">
+				<label style="font-weight:bold" id="lbl_secNm">Security Key Name :</label>
+			</td>
+			<td style="width:25%" align="left">
+				<input type="password" name="txt_sec_key_name" id="txt_sec_key_name" disabled="disabled" onfocus="onTextFocus()"/>
+			</td>
+			<td style="width:25%" align="right">
+				<label style="font-weight:bold" id="lbl_secKey">Security Key Size:</label>
+			</td>
+			<td style="width:25%" align="left">
+				<input type="password" name="txt_sec_key_size" id="txt_sec_key_size" disabled="disabled" onfocus="onTextFocus()"/>
+			</td>
+			
+	  	</tr>
+	
+		<tr style="width:100%">
+			<td style="width:25%" align="right">
+				<label style="font-weight:bold">Digital Signature Method:</label>
+			</td>
+			<td style="width:25%" align="left">
+				<input type="text" name="txt_dig_sign_method" id="txt_dig_sign_method" disabled="disabled" onfocus="onTextFocus()"/>
+			</td>
+			<td style="width:25%" align="right">
+				<label style="font-weight:bold">NPCI Version No.:</label>
+			</td>
+			<td style="width:25%" align="left">
+				<input type="text" name="txt_npci_ver_no" id="txt_npci_ver_no" disabled="disabled" onfocus="onTextFocus()"/>
+			</td>
+	  	</tr>
+	
+		<tr style="width:100%">
+			<td style="width:25%" align="right">
+				<label><font color="#FF0000">*</font>Keystore Filename:</label>
+			</td>
+			<td style="width:25%" align="left">
+				<input type="text" name="txt_keystore_filenm" id="txt_keystore_filenm" onblur="keyStoreValidation()" onfocus="onTextFocus()"/>
+			</td>
+			<td style="width:25%" align="right">
+				<label><font color="#FF0000">*</font>Keystore Password:</label>
+			</td>
+			<td style="width:25%" align="left">
+				<input type="password" name="txt_keystore_pwd" id="txt_keystore_pwd" onfocus="onTextFocus()"/>
+			</td>
+	  	</tr>
+
+		<tr style="width:100%">
+			<td style="width:25%" align="right">
+				<label><font color="#FF0000">*</font>Keystore Alias:</label>
+			</td>
+			<td style="width:25%" align="left">
+				<input type="text" name="txt_keystore_alias" id="txt_keystore_alias" onfocus="onTextFocus()"/>
+			</td>
+			<td style="width:25%" align="right">
+				<label><font color="#FF0000">*</font>Inward File Split Style:</label>
+			</td>
+			<td style="width:25%" align="left">
+				<select id="opt_inward_split_style" name="opt_inward_split_style">
+					  <option value="0">-Select Style-</option>
+					  <option value="CAPTURING">Capturing Branchwise</option>
+					  <option value="SEPARATED">Separate Branchwise</option>
+					  <option value="CENTRALISED">All Branches In One File</option>
+                </select>	
+			</td>
+	  	</tr>
+		
+
+<!--          adadasd  -->
+	<tr style="width:100%">
+			<td style="width:25%" align="right">
+				<label><font color="#FF0000">*</font>Bank Name:</label>
+			</td>
+			<td style="width:25%" align="left">
+				<input type="text" name="txt_bank_Name" id="txt_bank_Name" onfocus="onTextFocus()"/>
+			</td>
+			<td style="width:25%" align="right">
+				<label><font color="#FF0000">*</font>CHI Bank Name:</label>
+			</td>
+			<td style="width:25%" align="left">
+				<select id="txt_chi_bankname" name="txt_chi_bankname">
+					  <option value="0">-Select CHI Bank Name-</option>
+					  <option value="NPCI">NPCI</option>
+					  <option value="HDFC">HDFC</option>
+					  <option value="IDBI">IDBI</option>
+					  <option value="AXIS">AXIS</option>
+                </select>	
+			</td>
+	  	</tr>
+		
+		<tr style="width:100%">
+			
+			<td style="width:25%" align="right">
+				<label><font color="#FF0000">*</font>Vendor ID:</label>
+			</td>
+			<td style="width:25%" align="left">
+				<input type="text" name="txt_vendor_id" id="txt_vendor_id" onfocus="onTextFocus()"/>
+			</td>
+			<td style="width:25%" align="right">
+				<label>Vendor Name:</label>
+			</td>
+			<td style="width:25%" align="left">
+				<input type="text" name="txt_vendor_name" id="txt_vendor_name" onfocus="onTextFocus()"/>
+			</td>
+	  	</tr>
+		<tr style="width:100%">
+			
+			<td style="width:25%" align="right">
+				<label><font color="#FF0000">*</font>Hub Location ID:</label>
+			</td>
+			<td style="width:25%" align="left">
+				<input type="text" name="txt_hub_location_id" id="txt_hub_location_id" onfocus="onTextFocus()"/>
+			</td>
+			<td style="width:25%" align="right">
+				<label>Hub Location Name:</label>
+			</td>
+			<td style="width:25%" align="left">
+				<input type="text" name="txt_hub_location_name" id="txt_hub_location_name" onfocus="onTextFocus()"/>
+			</td>
+	  	</tr>
+		<tr style="width:100%">
+			
+			<td style="width:25%" align="right">
+				<label><font color="#FF0000">*</font>Core System:</label>
+			</td>
+			<td style="width:25%" align="left">
+				<select id="txt_core_system" name="txt_core_system">
+					  <option value="0">-Select Core System-</option>
+					  <option value="SUBMEM">SUBMEM</option>
+                </select>	
+			</td>
+			<td style="width:25%" align="right">
+				<label>Show Clearing Outward Popup:</label>
+			</td>
+			<td style="width:25%" align="left">
+				<select id="txt_clouwrd_popup" name="txt_clouwrd_popup">
+					  <option value="Y">Yes</option>
+					  <option value="N">No</option>
+                </select>	
+			</td>
+	  	</tr>
+		<tr style="width:100%">
+			
+	  	</tr>
+<!--fsdfsfs         sfsdfs -->		
+		
+		<tr style="width:100%">
+			<td colspan="2" style="width:50%" align="right">
+				<input type="button" value="Reset" id="submitbutton" onClick="afterReset_config()">	
+			</td>
+			
+			<td colspan="2" style="width:50%" align="left">
+				<input type="button" value="Save" id="submitbutton" onClick="afterSave_config()">	
+			</td>
+	  	</tr>
+		<tr style="width:100%">
+			<td align="center" colspan="4">
+			<label id="lbl_mandatory" style="color:#FF0000">(Fields marked with * are Mandatory)</label>			  
+			</td>
+		</tr>
+		
+  </table>
+  
+  </div>
+</div>
+<input name="session_loginid" id="session_loginid" type="hidden" value="<%=session.getAttribute("session_loginid")%>">
+<input type="hidden" id="loginstyle" name="loginstyle" value="<%=loginstyle%>"/>
+
+<div id="footer">
+<a href="javascript:showLogin()"><label style="color:#059BD8"> &nbsp;&nbsp;Logout</label> </a>
+ <jsp:include page="footer.jsp"></jsp:include>
+</div>
+
+<%
+System.out.println("Message:"+msg);
+	try
+	{
+	if(msg.length()>0)
+	{%>
+	<input type="hidden" id="hdMsg1" name="hdMsg1" value="<%=msg%>"/>
+	<%}
+	else
+	{%>
+	<input type="hidden" id="hdMsg1" name="hdMsg1" value="N"/>
+	<%}
+	}
+	catch(NullPointerException npe)
+	{%>
+	<input type="hidden" id="hdMsg1" name="hdMsg1" value="N"/>
+	<%
+	System.out.println("Message to be displayed on form is null");
+	}
+%>
+
+</body>
+</html>
