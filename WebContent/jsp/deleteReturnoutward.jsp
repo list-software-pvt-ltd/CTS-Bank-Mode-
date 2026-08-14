@@ -10,7 +10,7 @@
  
 	<%
 	
-		System.out.println("############# fetch all      DELETE CLEARING OUTWARD.jsp");
+		System.out.println("Sharayu ############# fetch all DELETE Return OUTWARD.jsp");
 		int cntfrrtvl=0;
 		String fileNameList = "";
 		String brncd="";
@@ -31,14 +31,14 @@
 		try
 		{
 			Connection cn = Configuration.getConnection();//(Connection)session.getAttribute("session_connection");
-			System.out.println("cn============================="+cn);
+			
 			if(cn == null)
 			throw new Exception("Session is Null");
 			cltype=request.getParameter("clearingtype");
-			
+			System.out.println("SAM ############# cltype==="+cltype);
 			frdate=request.getParameter("frdate");
 			whattodo=request.getParameter("whattodo");//whattodo
-			System.out.println("############# whattodo"+whattodo);
+			System.out.println("############# whattodo==="+whattodo);
 			brncd=request.getParameter("branch_code");
 			try
 			{
@@ -50,7 +50,7 @@
 			}
 			if(whattodo.equalsIgnoreCase("FF"))
 			{
-				query="select distinct nvl(RTO_XMLFILENAME, 'NOT RETURNED YET') from RETRUNOUTWARD where RTO_CLEARINGTYPE='"+cltype+"' and RTO_DDMMYYYY='"+frdate+"'";
+				query="select distinct nvl(RTO_XMLFILENAME, 'NOT RETURNED YET') from RETRUNOUTWARD where  RTO_DDMMYYYY='"+frdate+"'";//RTO_CLEARINGTYPE='"+cltype+"' and
 				System.out.println(query);
 				PreparedStatement ps=cn.prepareStatement(query);
 				//ps.setString(1,frdate);
@@ -87,9 +87,9 @@
 			else if(whattodo.equalsIgnoreCase("S"))
 			{
 				if(xmlfile.equalsIgnoreCase("NOT RETURNED YET"))
-					query="select * from RETRUNOUTWARD where RTO_DDMMYYYY='"+frdate+"' and  RTO_STATUS<>'D' and  RTO_CLEARINGTYPE='"+cltype+"'";
+					query="select * from RETRUNOUTWARD where RTO_DDMMYYYY='"+frdate+"' and  RTO_STATUS<>'D' ";//and  RTO_CLEARINGTYPE='"+cltype+"'
 				else
-					query="select * from RETRUNOUTWARD where RTO_DDMMYYYY='"+frdate+"' and  RTO_CLEARINGTYPE='"+cltype+"' and RTO_XMLFILENAME='"+xmlfile+"'";
+					query="select * from RETRUNOUTWARD where RTO_DDMMYYYY='"+frdate+"'  and RTO_XMLFILENAME='"+xmlfile+"'";//and  RTO_CLEARINGTYPE='"+cltype+"'
 				//System.out.println(query);
 				PreparedStatement ps=cn.prepareStatement(query);
 				//ps.setString(1,frdate);
@@ -143,7 +143,7 @@
 			frdate=frdate.replace("-", "");
 			String vals=request.getParameter("VALS");
 			JSONArray array=new JSONArray(vals);			  
-			query="delete from RETRUNOUTWARD where RTO_DDMMYYYY=? and RTO_CHEQUENO=? and  RTO_SORTCODE=? and RTO_TRANSACTIONCODE=? and RTO_AMOUNT=? and RTO_STATUS<>'D' and  RTO_CLEARINGTYPE=?";
+			query="delete from RETRUNOUTWARD where RTO_DDMMYYYY=? and RTO_CHEQUENO=? and  RTO_SORTCODE=? and RTO_TRANSACTIONCODE=? and RTO_AMOUNT=? and RTO_STATUS<>'D' ";//and  RTO_CLEARINGTYPE=?
 			PreparedStatement ps1=cn.prepareStatement(query);
 			int  saveFlag=0;
 			//saveFlag=ps1.executeUpdate();
@@ -160,7 +160,7 @@
 				ps1.setString(3, sortCode);
 				ps1.setString(4,tranCode );
 				ps1.setString(5, amount);
-				ps1.setString(6,cltype );
+			//	ps1.setString(6,cltype );
 					
 				saveFlag=ps1.executeUpdate();
 			  }
@@ -187,11 +187,11 @@
 			xmlfile=request.getParameter("filename");
 			String vals=request.getParameter("VALS");
 			JSONArray array=new JSONArray(vals);
-			query="update RETRUNOUTWARD set RTO_STATUS='Y',RTO_XMLFILENAME='' where RTO_DDMMYYYY=? and RTO_CHEQUENO=? and  RTO_SORTCODE=? and RTO_TRANSACTIONCODE=? and RTO_AMOUNT=? and RTO_STATUS='D' and  RTO_CLEARINGTYPE=? and RTO_XMLFILENAME=?";
+			query="update RETRUNOUTWARD set RTO_STATUS='Y',RTO_XMLFILENAME='' where RTO_DDMMYYYY=? and RTO_CHEQUENO=? and  RTO_SORTCODE=? and RTO_TRANSACTIONCODE=? and RTO_AMOUNT=? and RTO_STATUS='D' and RTO_XMLFILENAME=?";// and  RTO_CLEARINGTYPE=? 
 			
 			PreparedStatement ps1=cn.prepareStatement(query);
 			int  saveFlag=0;
-			System.out.println(query);
+			System.out.println("query======"+query);
 			  for(int m=0;m<array.length();m++)
 			  {
 				JSONObject obj=array.getJSONObject(m);
@@ -205,8 +205,8 @@
 				ps1.setString(3, sortCode);
 				ps1.setString(4,tranCode );
 				ps1.setString(5, amount);
-				ps1.setString(6,cltype );
-				ps1.setString(7, xmlfile);
+			//	ps1.setString(6,cltype );
+				ps1.setString(6, xmlfile);
 				System.out.println(frdate);
 				System.out.println(cheqNo );
 				System.out.println( sortCode);
@@ -216,6 +216,7 @@
 				System.out.println( xmlfile);
 						 
 				saveFlag=ps1.executeUpdate();
+				System.out.println( "saveFlag=="+saveFlag);
 			  }
 			if(saveFlag>0)
 			{   
