@@ -1,7 +1,7 @@
 var data;
 function onLoad_merging()
 {
-	//alert("1111111");
+	//alert("*****Inside onLoad_merging()*****");
 	//var val=document.getElementById("hdMsg1").value;
 	
 	var session_loginid = document.getElementById("session_loginid").value;
@@ -44,41 +44,70 @@ function onLoad_merging()
 					document.getElementById("formid").method="POST";
 					document.getElementById("formid").submit();
 	            }
-			}   
+			}  
+			
 		}
 		else
-		{
-			var hddoICallMerge=document.getElementById("hddoICallMerge").value;
-			if(hddoICallMerge=="Y")
-			{
-				//alert("list_branches"); \CTS\uploadpath_to_CHI
-				document.getElementById("waiting").style.display='';
-				var url=document.URL;
-				var p=url.lastIndexOf('/');
-				baseurl=url.substr(0,p+1);
-				baseurl=baseurl+"jsp/list_branches.jsp";
-				//location.replace(baseurl);
-				cts_Ajax_list_branches(baseurl);
-			}
-			else
-			{
-				//alert("Clearing Outward File Creation Is Already Done For Today!");
-				document.getElementById("waiting").style.display='';
-				var url=document.URL;
-				var p=url.lastIndexOf('/');
-				baseurl=url.substr(0,p+1);
-				baseurl=baseurl+"jsp/list_branches.jsp";
-				//location.replace(baseurl);
-				cts_Ajax_list_branches(baseurl);
-			}
-		}
+		       {
+		           // ==================================================
+		           // Urmila change - Validation before branch list
+		           // Date : 08/08/2026
+		           // ==================================================
+				   document.getElementById("waiting").style.display = '';
+
+				     var url = document.URL;
+
+				     var p = url.lastIndexOf('/');
+
+				     baseurl = url.substr(0, p + 1);
+
+				     baseurl =
+				         baseurl + "jsp/list_validation.jsp";
+
+				     console.log(
+				         "Calling list_validation.jsp : " +
+				         baseurl
+				     );
+
+				     /*alert(
+				         "Cheque validation started.\n\n" +
+				         "Please wait..."
+				     );
+*/
+				     cts_Ajax_list_validation(baseurl);
+				   /*var hddoICallMerge=document.getElementById("hddoICallMerge").value;
+				   			alert("hddoICallMerge:"+hddoICallMerge);
+				   			if(hddoICallMerge=="Y")
+				   			{
+				   				//alert("list_branches"); \CTS\uploadpath_to_CHI
+				   				document.getElementById("waiting").style.display='';
+				   				var url=document.URL;
+				   				var p=url.lastIndexOf('/');
+				   				baseurl=url.substr(0,p+1);
+				   				baseurl=baseurl+"jsp/list_branches.jsp";
+				   				//location.replace(baseurl);
+				   				cts_Ajax_list_branches(baseurl);
+				   			}
+				   			else
+				   			{
+				   				//alert("Clearing Outward File Creation Is Already Done For Today!");
+				   				document.getElementById("waiting").style.display='';
+				   				var url=document.URL;
+				   				var p=url.lastIndexOf('/');
+				   				baseurl=url.substr(0,p+1);
+				   				baseurl=baseurl+"jsp/list_branches.jsp";
+				   				//location.replace(baseurl);
+				   				cts_Ajax_list_branches(baseurl);
+				   			}*/
+				   
+		       }
 	}
 }
 
 
 function cts_Ajax_list_branches(url)
 {
-	//alert ("Retriving Data");
+	//alert ("Inside function cts_Ajax_list_branches");
 	if (window.XMLHttpRequest)
 	{
 		req = new XMLHttpRequest();
@@ -98,10 +127,909 @@ function cts_Ajax_list_branches(url)
 		}
 	}
 }
+//Urmila change Regarding validation of cheques before showing list of branches date[08/08/2026]
+function cts_Ajax_list_validation(url)
+{
+    console.log("========================================");
+    console.log("Inside cts_Ajax_list_validation()");
+    console.log("URL : " + url);
+    console.log("========================================");
+
+    document.getElementById("waiting").style.display = '';
+
+    req = newXMLHttpRequest();
+
+    if(req == null)
+    {
+        alert(
+            "Unable to create AJAX request."
+        );
+
+        document.getElementById("waiting").style.display = 'none';
+
+        return;
+    }
+
+    req.onreadystatechange = cts_process_validation;
+
+    console.log(
+        "Opening validation request..."
+    );
+
+    req.open(
+        "GET",
+        url,
+        true
+    );
+
+    /*
+     * Prevent cached response.
+     */
+
+    req.setRequestHeader(
+        "Cache-Control",
+        "no-cache"
+    );
+
+    console.log(
+        "Sending validation request..."
+    );
+
+    req.send(null);
+}
+function newXMLHttpRequest()
+{
+    if(window.XMLHttpRequest)
+    {
+        return new XMLHttpRequest();
+    }
+    else
+    {
+        return new ActiveXObject("Microsoft.XMLHTTP");
+    }
+}
+//Urmila change Regarding validation of cheques before showing list of branches date[08/08/2026]
+
+
+//Urmila change Regarding validation of cheques before showing list of branches date[10/08/2026]
+function load_list_branches_after_validation()
+{
+    console.log("========================================");
+    console.log("Loading list_branches.jsp");
+    console.log("========================================");
+
+
+    var hddoICallMerge =
+        document.getElementById("hddoICallMerge").value;
+
+
+    console.log(
+        "hddoICallMerge = [" +
+        hddoICallMerge +
+        "]"
+    );
+
+
+    document.getElementById("waiting").style.display = '';
+
+
+    var url = document.URL;
+
+    var p = url.lastIndexOf('/');
+
+    baseurl =
+        url.substr(0, p + 1);
+
+    baseurl =
+        baseurl + "jsp/list_branches.jsp";
+
+
+    console.log(
+        "Calling list_branches.jsp : " +
+        baseurl
+    );
+
+
+    /*
+     * hddoICallMerge is only logged here.
+     *
+     * Both Y and non-Y currently call
+     * list_branches.jsp in your original flow,
+     * so no separate if/else is required.
+     */
+
+    cts_Ajax_list_branches(baseurl);
+}
+
+function cts_process_validation()
+{
+    console.log("========================================");
+    console.log("Inside cts_process_validation()");
+    console.log("ReadyState : " + req.readyState);
+    console.log("Status     : " + req.status);
+    console.log("========================================");
+
+    if(req.readyState != 4)
+    {
+        return;
+    }
+
+    /*
+     * Server error
+     */
+    if(req.status != 200)
+    {
+        document.getElementById("waiting").style.display = 'none';
+
+        alert(
+            "Unable to validate cheque data.\n\n" +
+            "Please check the server connection."
+        );
+
+        return;
+    }
+
+
+    /*
+     * Get response from list_validation.jsp
+     */
+    var res = req.responseText;
+
+    console.log("RAW VALIDATION RESPONSE:");
+    console.log("[" + res + "]");
+
+
+    /*
+     * Remove whitespace
+     */
+    res = res.replace(/^\s+|\s+$/g, "");
+
+    console.log("CLEAN VALIDATION RESPONSE:");
+    console.log("[" + res + "]");
+
+
+    // =========================================================
+    // SUCCESS
+    // =========================================================
+
+    if(res == "SUCCESS")
+    {
+        console.log("VALIDATION SUCCESS");
+
+        load_list_branches_after_validation();
+
+        return;
+    }
+
+
+    // =========================================================
+    // FAILED
+    // =========================================================
+
+    else if(res.indexOf("FAILED#") == 0)
+    {
+        console.log("VALIDATION FAILED");
+
+        var invalidData =
+            res.substring("FAILED#".length);
+
+        console.log(
+            "Invalid Data : [" +
+            invalidData +
+            "]"
+        );
+
+
+        /*
+         * Response format:
+         *
+         * BRANCH~CHEQUE~COLUMN_NAME~COLUMN_VALUE~EXPECTED|
+         */
+        var records =
+            invalidData.split("|");
+
+
+        /*
+         * Object used to group multiple invalid
+         * fields belonging to the same cheque.
+         *
+         * Example:
+         *
+         * Cheque 20333
+         *   - Drawee Account Number
+         *   - Payee Name
+         *
+         * will become:
+         *
+         * Cheque No. 20333 :
+         * Drawee Account Number & Payee Name is invalid.
+         */
+        var chequeMap = {};
+
+
+        /*
+         * Process every invalid field
+         */
+        for(var i = 0; i < records.length; i++)
+        {
+            if(records[i] == "")
+            {
+                continue;
+            }
+
+
+            var data =
+                records[i].split("~");
+
+
+            var branchCode =
+                data[0] || "";
+
+            var chequeNo =
+                data[1] || "";
+
+            var columnName =
+                data[2] || "";
+
+
+            /*
+             * Friendly display name
+             */
+            var displayColumnName = "";
+
+
+            if(columnName == "CLO_PAYEE_ACCNM")
+            {
+                displayColumnName =
+                    "Payee Name";
+            }
+            else if(columnName == "CLO_DRAWEE_ACCNO")
+            {
+                displayColumnName =
+                    "Drawee Account Number";
+            }
+            else if(columnName == "CLO_ITEMSEQNO")
+            {
+                displayColumnName =
+                    "Item Sequence Number";
+            }
+            else
+            {
+                /*
+                 * Fallback for any future validation field
+                 */
+                displayColumnName =
+                    columnName;
+            }
+
+
+            /*
+             * Unique key based on branch + cheque number
+             */
+            var key =
+                branchCode + "_" + chequeNo;
+
+
+            /*
+             * First invalid field for this cheque
+             */
+            if(!chequeMap[key])
+            {
+                chequeMap[key] =
+                {
+                    branchCode: branchCode,
+                    chequeNo: chequeNo,
+                    fields: []
+                };
+            }
+
+
+            /*
+             * Avoid duplicate field names
+             */
+            if(
+                chequeMap[key].fields.indexOf(
+                    displayColumnName
+                ) == -1
+            )
+            {
+                chequeMap[key].fields.push(
+                    displayColumnName
+                );
+            }
+        }
+
+
+        /*
+         * =====================================================
+         * BUILD ALERT
+         * =====================================================
+         */
+
+        var alertMessage =
+            "Invalid Cheque Details:\n\n";
+
+
+        var chequeCount = 0;
+
+
+        /*
+         * Maximum 7 cheque records in alert
+         */
+        for(var key in chequeMap)
+        {
+            if(!chequeMap.hasOwnProperty(key))
+            {
+                continue;
+            }
+
+
+            /*
+             * Show maximum 7 invalid cheque records
+             */
+            if(chequeCount >= 7)
+            {
+                break;
+            }
+
+
+            var cheque =
+                chequeMap[key];
+
+
+            var fields =
+                cheque.fields;
+
+
+            /*
+             * Join fields
+             *
+             * Example:
+             *
+             * Drawee Account Number & Payee Name
+             */
+            var invalidFieldsText = "";
+
+
+            if(fields.length == 1)
+            {
+                invalidFieldsText =
+                    fields[0];
+            }
+            else if(fields.length == 2)
+            {
+                invalidFieldsText =
+                    fields[0] +
+                    " & " +
+                    fields[1];
+            }
+            else
+            {
+                invalidFieldsText =
+                    fields.slice(0, fields.length - 1).join(", ") +
+                    " & " +
+                    fields[fields.length - 1];
+            }
+
+
+            /*
+             * Add cheque information
+             */
+            alertMessage +=
+                "Branch No: " +
+                cheque.branchCode +
+                ", Cheque No. " +
+                cheque.chequeNo +
+                " : " +
+                invalidFieldsText +
+                " is invalid.\n";
+
+
+            chequeCount++;
+        }
+
+
+        /*
+         * If more than 7 invalid cheques exist,
+         * show a small summary.
+         */
+        var totalInvalidCheques =
+            Object.keys(chequeMap).length;
+
+
+        if(totalInvalidCheques > 7)
+        {
+            alertMessage +=
+                "\nShowing first 7 invalid cheque records " +
+                "out of " +
+                totalInvalidCheques +
+                ".\n";
+        }
+
+
+        /*
+         * Final instruction
+         */
+        alertMessage +=
+            "\nPlease verify the details and try again.";
+
+
+        /*
+         * Stop waiting image
+         */
+        document.getElementById("waiting").style.display = 'none';
+
+
+        /*
+         * Show ONLY one alert
+         */
+        alert(alertMessage);
+
+
+        /*
+         * Continue after user clicks OK
+         */
+        load_list_branches_after_validation();
+
+        return;
+    }
+
+
+    // =========================================================
+    // SESSION EXPIRED
+    // =========================================================
+
+    else if(res.indexOf("SessionIsNull") == 0)
+    {
+        document.getElementById("waiting").style.display = 'none';
+
+        alert(
+            "Your Session Has Been Expired.\n\n" +
+            "Please Login Again."
+        );
+
+        menuOnClick("login.jsp");
+
+        return;
+    }
+
+
+    // =========================================================
+    // DATABASE / SERVER ERROR
+    // =========================================================
+
+    else if(res.indexOf("ERROR#") == 0)
+    {
+        document.getElementById("waiting").style.display = 'none';
+
+        var errorMessage =
+            res.substring("ERROR#".length);
+
+        console.log(
+            "Validation Error : " +
+            errorMessage
+        );
+
+        alert(
+            "Validation Error.\n\n" +
+            errorMessage
+        );
+
+        return;
+    }
+
+
+    // =========================================================
+    // UNEXPECTED RESPONSE
+    // =========================================================
+
+    else
+    {
+        document.getElementById("waiting").style.display = 'none';
+
+        console.log(
+            "UNEXPECTED VALIDATION RESPONSE:"
+        );
+
+        console.log(
+            "[" + res + "]"
+        );
+
+        alert(
+            "Unexpected validation response.\n\n" +
+            "Server Response:\n" +
+            "[" + res + "]"
+        );
+
+        return;
+    }
+}
+
+
+/*function cts_process_validation()
+{
+    if(req.readyState != 4)
+    {
+        return;
+    }
+
+    if(req.status != 200)
+    {
+        document.getElementById("waiting").style.display = 'none';
+
+        alert(
+            "VALIDATION SERVER ERROR\n\n" +
+            "Unable to validate cheque data.\n" +
+            "HTTP Status : " + req.status
+        );
+
+        return;
+    }
+
+    var res = req.responseText;
+
+    console.log("========================================");
+    console.log("Validation RAW Response:");
+    console.log("[" + res + "]");
+    console.log("========================================");
+
+    res = res.replace(/^\s+|\s+$/g, "");
+
+    
+     * =====================================================
+     * SUCCESS
+     * =====================================================
+     
+    if(res == "SUCCESS")
+    {
+        document.getElementById("waiting").style.display = 'none';
+
+        alert(
+            "CHEQUE DATA VALIDATION SUCCESSFUL\n\n" +
+            "All cheque records are valid."
+        );
+
+        
+         * Continue existing flow
+         
+        load_list_branches_after_validation();
+
+        return;
+    }
+
+
+    
+     * =====================================================
+     * FAILED
+     * =====================================================
+     
+	
+	 * =====================================================
+	 * VALIDATION FAILED
+	 * Group invalid fields by Branch Code + Cheque Number
+	 * =====================================================
+	 
+	else if(res.indexOf("FAILED#") == 0)
+	{
+	    console.log("VALIDATION RESULT : FAILED");
+
+	    var invalidData =
+	        res.substring("FAILED#".length);
+
+	    console.log(
+	        "Invalid Data : [" +
+	        invalidData +
+	        "]"
+	    );
+
+	    
+	     * Each field validation result is separated by |
+	     
+	    var records =
+	        invalidData.split("|");
+
+
+	    
+	     * Object used to group invalid fields
+	     *
+	     * Key:
+	     * Branch Code + Cheque Number
+	     
+	    var chequeGroups = {};
+
+	    var chequeOrder = [];
+
+
+	    
+	     * =================================================
+	     * READ ALL INVALID FIELDS
+	     * =================================================
+	     
+	    for(var i = 0; i < records.length; i++)
+	    {
+	        if(records[i] == null ||
+	           records[i].replace(/^\s+|\s+$/g, "") == "")
+	        {
+	            continue;
+	        }
+
+	        var data =
+	            records[i].split("~");
+
+
+	        var branchCode =
+	            data[0] || "";
+
+	        var chequeNo =
+	            data[1] || "";
+
+	        var columnName =
+	            data[2] || "";
+
+	        var columnValue =
+	            data[3] || "";
+
+	        var expectedFormat =
+	            data[4] || "";
+
+
+	        
+	         * Create unique key for cheque
+	         
+	        var chequeKey =
+	            branchCode + "_" + chequeNo;
+
+
+	        
+	         * Create group if it does not exist
+	         
+	        if(!chequeGroups[chequeKey])
+	        {
+	            chequeGroups[chequeKey] =
+	            {
+	                branchCode: branchCode,
+	                chequeNo: chequeNo,
+	                fields: []
+	            };
+
+	            
+	             * Keep original database order
+	             
+	            chequeOrder.push(chequeKey);
+	        }
+
+
+	        
+	         * Friendly column name
+	         
+	        var displayColumnName =
+	            columnName;
+
+	        if(columnName == "CLO_PAYEE_ACCNM")
+	        {
+	            displayColumnName =
+	                "Payee Account Name";
+	        }
+	        else if(columnName == "CLO_DRAWEE_ACCNO")
+	        {
+	            displayColumnName =
+	                "Drawee Account Number";
+	        }
+	        else if(columnName == "CLO_ITEMSEQNO")
+	        {
+	            displayColumnName =
+	                "Item Sequence Number";
+	        }
+
+
+	        
+	         * Add invalid field to this cheque
+	         
+	        chequeGroups[chequeKey].fields.push(
+	        {
+	            columnName: columnName,
+	            displayColumnName: displayColumnName,
+	            columnValue: columnValue,
+	            expectedFormat: expectedFormat
+	        });
+	    }
+
+
+	    
+	     * =================================================
+	     * CREATE FINAL ALERT
+	     * =================================================
+	     
+	    var alertMessage =
+	        "========================================\n" +
+	        "       CHEQUE DATA VALIDATION FAILED\n" +
+	        "========================================\n\n";
+
+
+	    
+	     * Number of invalid cheques
+	     
+	    var invalidChequeCount =
+	        chequeOrder.length;
+
+
+	    
+	     * =================================================
+	     * DISPLAY ONE ENTRY PER CHEQUE
+	     * =================================================
+	     
+	    for(var j = 0; j < chequeOrder.length; j++)
+	    {
+	        var key =
+	            chequeOrder[j];
+
+	        var cheque =
+	            chequeGroups[key];
+
+
+	        alertMessage +=
+	            "========================================\n" +
+	            "Invalid Cheque : " +
+	            (j + 1) +
+	            "\n" +
+	            "========================================\n" +
+
+	            "Branch Code   : " +
+	            cheque.branchCode +
+	            "\n" +
+
+	            "Cheque Number : " +
+	            cheque.chequeNo +
+	            "\n\n";
+
+
+	        
+	         * Display all invalid fields
+	         * belonging to this cheque
+	         
+	        for(var k = 0;
+	            k < cheque.fields.length;
+	            k++)
+	        {
+	            var field =
+	                cheque.fields[k];
+
+
+	            alertMessage +=
+	                "Invalid Field " +
+	                (k + 1) +
+	                "\n" +
+
+	                "Field         : " +
+	                field.displayColumnName +
+	                "\n" +
+
+	                "Column Name   : " +
+	                field.columnName +
+	                "\n" +
+
+	                "Column Value  : [" +
+	                field.columnValue +
+	                "]\n" +
+
+	                "Expected      : " +
+	                field.expectedFormat +
+	                "\n\n";
+	        }
+
+
+	        alertMessage +=
+	            "----------------------------------------\n\n";
+	    }
+
+
+	    
+	     * =================================================
+	     * FINAL MESSAGE
+	     * =================================================
+	     
+	    alertMessage +=
+	        "Total Invalid Cheques : " +
+	        invalidChequeCount +
+	        "\n\n" +
+
+	        "Please correct the invalid cheque data.\n\n" +
+
+	        "Click OK to continue to the branch list.";
+
+
+	    
+	     * Hide waiting image
+	     
+	    document.getElementById("waiting").style.display = 'none';
+
+
+	    
+	     * Show ONE alert containing all invalid cheques
+	     
+	    alert(alertMessage);
+
+
+	    
+	     * After OK:
+	     * Continue existing flow.
+	     
+	    load_list_branches_after_validation();
+
+	    return;
+	}
+
+
+    
+     * =====================================================
+     * SESSION EXPIRED
+     * =====================================================
+     
+    else if(res.indexOf("SessionIsNull") == 0)
+    {
+        document.getElementById("waiting").style.display = 'none';
+
+        alert(
+            "SESSION EXPIRED\n\n" +
+            "Your session has expired.\n" +
+            "Please login again."
+        );
+
+        menuOnClick("login.jsp");
+
+        return;
+    }
+
+
+    
+     * =====================================================
+     * SERVER ERROR
+     * =====================================================
+     
+    else if(res.indexOf("ERROR#") == 0)
+    {
+        document.getElementById("waiting").style.display = 'none';
+
+        var errorMessage =
+            res.substring("ERROR#".length);
+
+        alert(
+            "VALIDATION ERROR\n\n" +
+            errorMessage
+        );
+
+        return;
+    }
+
+
+    
+     * =====================================================
+     * UNEXPECTED RESPONSE
+     * =====================================================
+     
+    else
+    {
+        document.getElementById("waiting").style.display = 'none';
+
+        console.log(
+            "Unexpected Validation Response: [" +
+            res +
+            "]"
+        );
+
+        alert(
+            "UNEXPECTED VALIDATION RESPONSE\n\n" +
+            "Server Response:\n\n" +
+            res
+        );
+
+        return;
+    }
+}*/
 
 function cts_process_list_branches()
 {
-
+	//alert("Alert inside cts_process_list_branches()");
   	if(req.readyState == 4)
 	{
 		if(req.status == 200)
@@ -127,7 +1055,23 @@ function cts_process_list_branches()
 			}
 			else
 			{
+				//alert("cts_process_list_branches inside ");
+				//alert("res:"+res);
+				//After this response we check list_validation if false then show alert and if true then show list of branches
 			//alert("res:"+res);
+			//sharayu comment-? call 
+			/**
+			 * 			 document.getElementById("waiting").style.display='';
+			 				var url=document.URL;
+			 				var p=url.lastIndexOf('/');
+			 				baseurl=url.substr(0,p+1);
+			 				baseurl=baseurl+"jsp/list_branches.jsp" 
+			 				//location.replace(baseurl);
+			 				cts_Ajax_list_branches(baseurl);*/
+							//sucess -?fiels -select 3 cloun  from clearingoutward where conbrt=Y and date =ssydate 
+							//retval===validate ? return tru or false 
+							//true= sho list of branch
+							// false =alrt chq - data la issue ahe 
 				show_listof_branches(res);
 				enable_merge_btn();
 			}
