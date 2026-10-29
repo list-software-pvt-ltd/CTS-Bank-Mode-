@@ -1,0 +1,216 @@
+	public String generateRRF()//old
+		{
+			System.out.println("*** inside generateRRF *****");
+			String retVal="";
+			String RRF_name= GetFileName.getReturnFileName("RRF");
+			String RRF_done_name=RRF_name+".done"; //GetFileName.getReturnFileName("RRF");
+			String fileId=RRF_name.substring(RRF_name.lastIndexOf("_")+1,RRF_name.lastIndexOf("."));
+			XMLOutputFactory xof =  null;
+			XMLStreamWriter xtw = null;
+			long totAmt = 0;
+			int totChq = 0;
+			String clearingType="";
+			String chequeNo="",cycleNo="",itemSeqNo="";;
+			String presentmentDate="";
+			String status="";
+			try
+			{
+
+				//Connection con=Configuration.getConnection();
+				//PreparedStatement psInsert=con.prepareStatement("Insert into RETRUNOUTWARD values(?,?,?,?,?,?,?)");
+
+				String path=Configuration.getConfValByNm("CFG_uploadpath_to_chi")+"ReturnOutward/";;
+				xof =  XMLOutputFactory.newInstance();
+				System.out.println("path:"+path);
+				//System.out.println("path:"+path);
+				String micrFile=RRF_name;
+				//path where to generaete RRF.xml
+				String path_rrf= Configuration.getConfValByNm("CFG_uploadpath_to_chi");
+				Writer writer = new OutputStreamWriter(new FileOutputStream(path_rrf+RRF_name), "UTF-8");
+				xtw = xof.createXMLStreamWriter(writer);
+
+				xtw.writeStartDocument("UTF-8","1.0");
+				xtw.writeComment("CTC Interface");
+
+				xtw.writeStartElement("FileHeader");
+
+																//urn:schemas-ncr-com:ECPIX:RRF:FileStructure:010003
+				xtw.writeAttribute("xmlns","urn:schemas-ncr-com:ECPIX:RRF:FileStructure:010003");
+				xtw.writeAttribute("VersionNumber",versionnumber);
+				xtw.writeAttribute("TestFileIndicator","P");// it must be P
+				xtw.writeAttribute("CreationDate",Configuration.getDDMMYYYY());
+				xtw.writeAttribute("CreationTime",Configuration.getHHMISS());
+			    xtw.writeAttribute("FileID",fileId);//decide the FileID
+
+				//System.out.println("**** 1 ****");
+				String rec = "";																										//MICRDATAFILE
+				BufferedReader br = new BufferedReader(new FileReader(path+"From_CBS_Return_Outward.txt"));
+				//System.out.println("**** 2 ****");
+				String DepositorAcct="";
+				String presentingBankRoutNo="";
+				String BOFDBusDate="";
+				String BOFDRoutNo="";
+				String ifsc="";
+				while ((rec = br.readLine()) != null)
+				{
+/*
+							SerialNo;PayorBankRoutNo;TransCode;Amount
+							chqNo+sortCode+tranNo+amount
+*/
+
+					String BOFD =rec.substring(0,9);//"380434251"; rec.substring(0,9);"380434251";//rec.substring(0,9);
+					//System.out.println("\nBOFD::>>>"+BOFD);
+					chequeNo =rec.substring(9,15);;//"143540";rec.substring(9,15);;"143540";//rec.substring(9,15);//Cheque No
+					//System.out.println("\n\nchequeNo::>>>"+chequeNo);
+					String sortCode = rec.substring(15,24);//Sort Code
+					System.out.println("\nsortCode::>>>"+sortCode);
+					String tranCode = rec.substring(24,27);//Tran Code
+					String Amount = rec.substring(27,45);//Amount
+					String accountNo = rec.substring(45,61);//Account No
+					String retReasonCode = rec.substring(61,64);//Ret Reason Code NOTE: 3 digits provided from CBS
+
+					/*psInsert.setString(1,BOFD);//BOFD
+					psInsert.setString(1,chequeNo);//CHEQUENO
+					psInsert.setString(1,sortCode);//SORTCODE
+					psInsert.setString(1,tranCode);//TRANSACTIONCODE
+					psInsert.setString(1,Amount);//AMOUNT
+					psInsert.setString(1,accountNo);//ACCOUNTNUMBER
+					psInsert.setString(1,retReasonCode);//RETURNREASONCODE*/
+
+
+					//String sortCode = rec.substring(64,73);
+
+					System.out.println("\n\brn::>>>"+ifsc);
+
+					String retRRFValues=Configuration.getRRFFileDB(chequeNo,sortCode);
+					if(retRRFValues.indexOf("Value Not Found")>-1)
+					{//1
+							status="Value Not Found";
+					  		break;
+				  	}
+				  else
+				  {
+
+//retVal=CLEARINGTYPE+"#"+ITEMSEQUENCENO+"#"+presentmentDate+"#"+cycleNo+"#"+PresentingBankRoutNo+"#"+BOFDRoutNo+"#"+BOFDBusDate+"#"+DepositorAcct+"#"+IFSC+"#";
+					    System.out.println("retRRFValues:>>>"+retRRFValues);
+						String[] retRRFValArr=retRRFValues.split("#");
+						clearingType=retRRFValArr[0];
+						itemSeqNo=retRRFValArr[1];
+						presentmentDate=retRRFValArr[2];
+						cycleNo=retRRFValArr[3];
+						presentingBankRoutNo=retRRFValArr[4];
+						BOFDRoutNo=retRRFValArr[5];
+						BOFDBusDate=retRRFValArr[6];
+						DepositorAcct=retRRFValArr[7];
+						if(DepositorAcct==null)
+								DepositorAcct=" ";
+						ifsc=retRRFValArr[8];
+				   }
+					/*DepositorAcct=Configuration.getDraweeAccountNo(chequeNo,sortCode);
+					clearingType=Configuration.getClearingType(chequeNo,sortCode);
+					presentmentDate=Configuration.getPresentmentDate(chequeNo,sortCode);
+					cycleNo=Configuration.getRRFCycleNo(chequeNo,sortCode);
+					itemSeqNo=Configuration.getRRFItemSeqNo(chequeNo,sortCode);*/
+					//chqNo+sortCode+tranNo+amount
+					String signatureString=chequeNo+";"+sortCode+";"+tranCode+";"+Amount+";";
+					String signatureData=Configuration.micrEncryptedData(signatureString);
+					String signatureLength=Integer.toString(Configuration.dasLength);
+					//String BOFDRoutNo = BOFD;//BOFDRoutNo
+					//String BOFDBusDate = Configuration.getDDMMYYYY();//BOFDBusDate
+					//String DepositorAcct =  //rec.substring(62,87);//DepositorAcct
+
+					System.out.println("itemSeqNo>>>>>"+itemSeqNo);
+					totAmt += getAmount(Amount);
+					totChq++;
+					xtw.writeStartElement("Item");
+					xtw.writeAttribute("ItemSeqNo",itemSeqNo);
+					//MICR Data
+					xtw.writeAttribute("PayorBankRoutNo",sortCode);
+					xtw.writeAttribute("Amount",Long.parseLong(Amount)+"");
+					xtw.writeAttribute("AccountNo",Configuration.lPad(accountNo,25,"0"));
+					xtw.writeAttribute("SerialNo",chequeNo);
+					xtw.writeAttribute("TransCode",tranCode);
+					//MICR Data Ends Here...
+					xtw.writeAttribute("PresentingBankRoutNo",presentingBankRoutNo);
+					xtw.writeAttribute("PresentmentDate",presentmentDate);
+					xtw.writeAttribute("CycleNo",cycleNo);
+					xtw.writeAttribute("ClearingType",clearingType);
+					//Above Same As Per CXF
+					xtw.writeAttribute("ReturnReason",retReasonCode);
+
+					xtw.writeStartElement("AddendA");
+					xtw.writeAttribute("BOFDRoutNo",BOFDRoutNo);
+					xtw.writeAttribute("BOFDBusDate",BOFDBusDate);
+					xtw.writeAttribute("DepositorAcct",Configuration.lPad(DepositorAcct,25,"0")); //optional
+					xtw.writeAttribute("IFSC",ifsc);
+					xtw.writeEndElement();//AddendA
+					/*xtw.writeStartElement("MICRDS");
+					xtw.writeAttribute("Source","Drawee");
+					xtw.writeAttribute("DigitalSignatureMethod",digitalsignaturemethod);
+					xtw.writeAttribute("SecurityKeySize",securitykeysize);
+					xtw.writeAttribute("MICRFingerPrint",signatureString);
+					xtw.writeAttribute("DigitalSignatureLength","344");
+					xtw.writeAttribute("SignatureData",signatureData);
+		xtw.writeAttribute("SecurityOriginatorName",securityoriginatorname.length()<16?securityoriginatorname:securityoriginatorname.substring(0,16));
+						xtw.writeAttribute("SecurityAuthenticatorName",securityauthenticatorname.length()<16?securityauthenticatorname:securityauthenticatorname.substring(0,16));
+						xtw.writeAttribute("SecurityKeyName",securitykeyname.length()<16?securitykeyname:securitykeyname.substring(0,16));
+					xtw.writeEndElement();//MICRDS*/
+					xtw.writeEndElement();//Item
+					//System.out.println("** 18 **");
+				}
+				xtw.writeStartElement("FileSummary");
+				xtw.writeAttribute("TotalItemCount",Integer.toString(totChq));
+				xtw.writeAttribute("TotalAmount",Long.toString(totAmt));
+				xtw.writeEndElement();//FileSummary
+				//System.out.println("** 19 **");
+				xtw.writeEndElement();//FileHeader Ends Here
+				xtw.writeEndDocument();
+				xtw.flush();
+				xtw.close();
+
+				if(status.contains("Value Not Found"))
+				{
+						retVal="Value Not Found For RRF File#";
+						new File(path_rrf+RRF_name).delete();
+				}
+				else
+				{
+						//retVal="SUCCESS#"+RRF_name+"#"+micrFile;
+						retVal="SUCCESS#";
+						PrintWriter pw=new PrintWriter (path_rrf+RRF_done_name);
+						System.out.println("Done..."+retVal);
+				}
+			}
+			catch (XMLStreamException e)
+			{
+			  System.out.println("Log1\n"+e.getMessage());
+			  retVal="FAIL1#";
+			}
+			catch (IOException ie)
+			{
+			  System.out.println("Log2\n"+ie.getMessage());
+			  retVal="FAIL2#";
+			}
+			catch (Exception ie)
+			{
+				ie.printStackTrace();
+			  System.out.println("Log3\n"+ie.getMessage());
+			  retVal="FAIL3#";
+			}
+			finally
+			{
+			  if (xtw != null)
+			  {
+				try
+				{
+				  xtw.close();
+				}
+				catch (XMLStreamException e)
+				{
+				  System.out.println("Log4\n"+e.getMessage());
+				}
+			  }
+			}
+			System.out.println("Exit from generateRRF ..."+retVal);
+			return retVal;
+	}//generateRRF

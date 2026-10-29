@@ -1,0 +1,5 @@
+Are you using JNI? There are two problems that could cause Unsatisfied
+link errors. One is the DLL not found, and the other is that the DLL is
+found but is unreadable or the specific function cannot be found in it.
+Since you have set your path correctly, I guess the reason you got the
+error is the second cause.
