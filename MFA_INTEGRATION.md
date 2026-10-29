@@ -167,3 +167,4 @@ No Maven. Eclipse picks the jar up under *Web App Libraries*. Refresh the projec
 | Date | Change |
 |---|---|
 | 2026-10-29 | First integration, ported from CTS-SYSTEM-MODE: mfa-core-1.0.0 (jar SHA-256 `E43436EB13DF454E…`), app code `CTS-BANK-MODE`, QR key via `mfa.qr.private-key`, `mfaAdmin.jsp` identical to the sample |
+| 2026-10-29 | `mfa.admin.apps` = `EFT,AML,CIBIL,CKYC,CTS-BANK-MODE,CTS-SYSTEM-MODE,APS` (APS integrated) |
