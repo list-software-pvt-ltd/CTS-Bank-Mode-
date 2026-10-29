@@ -91,25 +91,33 @@ System.out.println("***** start of cts afterLogin ******");
 		System.out.println("Password="+pass);
 	}
 	else{
-		txt_loginid=request.getParameter("txt_loginid").trim();
-		txt_loginid = CryptoKey.newdecrypt(txt_loginid.trim());
+		// CTSUSER: the password was checked by checkUserAndPassword.jsp, the second factor by mfaVerify.jsp
+		txt_loginid=((String)session.getAttribute("mfa.loginOkUser")).trim();
 		Configuration.writeLog("After txt_loginid="+txt_loginid);
 		System.out.println("txt_loginid="+txt_loginid);
-		
-		pass=request.getParameter("txt_pwd").trim();
-		pass = CryptoKey.newdecrypt(pass.trim());
-		Configuration.writeLog("After pass="+pass);
-		System.out.println("Password="+pass);
 	}
-	
-	
+
+
 		}
 		catch(NullPointerException e)
 		{
 	txt_loginid="NA";
 	System.out.println("Error..."+e);
 		}
-		
+
+		// MFA: only the user who finished the second factor (jsp/mfaVerify.jsp, or mfaInitiate.jsp for NO_AUTH)
+		// or the CBS entry check (logincheck.jsp) in this session may log in
+		String mfaOkUser=(String)session.getAttribute("mfa.loginOkUser");
+		if(mfaOkUser==null || !mfaOkUser.trim().equals(txt_loginid))
+		{
+			System.out.println("MFA not completed for user "+txt_loginid);
+			cn.close();
+			response.sendRedirect("../invalidcredentials.jsp?msg=Invalid Login or Password");
+			return;
+		}
+		session.removeAttribute("mfa.loginOkUser");
+		request.changeSessionId();   // new session id once fully authenticated
+
 		/* if(loginstyle.equals("CUSTODIAN"))
 		{
 	pass=request.getParameter("name").trim();
@@ -157,16 +165,12 @@ System.out.println("***** start of cts afterLogin ******");
 	if(!txt_loginid.equals("NA"))
 	{
 		System.out.println("If ==============");
-		if(loginstyle.equals("CBSUSER") || loginstyle.equals("CUSTODIAN"))
-			qry="select LOGINID, USRPASS, BRNCD, USRROLE, EMAILID,USRNAME from USRMSTR_VIEW where LOGINID=? and ISACTIVE=?";
-		else
-			qry="select LOGINID, USRPASS, BRNCD, USRROLE, EMAILID,USRNAME from USRMSTR_VIEW where LOGINID=? and ISACTIVE=? and USRPASS=?";
-			
+		// password (CTSUSER) / CBS session (CBSUSER) already verified before mfa.loginOkUser was set
+		qry="select LOGINID, USRPASS, BRNCD, USRROLE, EMAILID,USRNAME from USRMSTR_VIEW where LOGINID=? and ISACTIVE=?";
+
 		pst=cn.prepareStatement(qry);
 		pst.setString(1,txt_loginid);
 		pst.setString(2,"Y");
-		if(loginstyle.equals("CTSUSER"))
-			pst.setString(3,pass);
 	}
 	
 	boolean flg=false;
