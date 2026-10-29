@@ -20,28 +20,13 @@
 <%@page import="cts.*"%>
 <%@page import="java.sql.*"%>
 <%
-          String loginstyle;
-          Connection cn=Configuration.getConnection();
-          if(cn==null)
-          {
-              application.log("Unable to load login style because the database connection is unavailable.");
-              response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "Login service is temporarily unavailable.");
-              return;
-          }
-          try(Connection loginConnection=cn)
-          {
-              loginstyle=Configuration.getConfValByNm("CFG_LOGINSTYLE", loginConnection);
-          }
-          catch(SQLException e)
-          {
-              application.log("Unable to finish loading login style from the database.", e);
-              response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "Login service is temporarily unavailable.");
-              return;
-          }
-          if("CUSTODIAN".equals(loginstyle))
+          Connection cn=null;
+          cn=Configuration.getConnection();
+          String loginstyle=Configuration.getConfValByNm("CFG_LOGINSTYLE", cn);
+          cn.close();
+          if(loginstyle.equals("CUSTODIAN"))
           {
         	  response.sendRedirect("invalidcredentials.jsp?msg=Your Session Has Been Expired. Please Login Again.");
-              return;
           }
           
 	String msg="",flag="";
@@ -162,24 +147,6 @@ System.out.println("Message:"+msg);
 %>
 	<input type="hidden" id="flag" name="flag" value="<%=flag%>"/>
 				  </form>
-				  <!-- Second factor (mfa-core): shown by login.js after the password check, in place of the form -->
-				  <div id="mfaPanel" style="display:none">
-					<fieldset>
-					  <legend>Second Factor</legend>
-					  <div id="mfaQrBox" style="display:none; margin-bottom:10px;">
-						<img id="mfaQrImage" alt="QR code" width="250" height="250" style="background-color:white; padding:4px;"/>
-					  </div>
-					  <p id="mfaHint" style="margin-bottom:10px;"></p>
-					  <div style="display: flex; align-items: center;">
-						<label class="hidden-label" for="mfa_otp">Enter OTP</label>
-						<input id="mfa_otp" name="mfa_otp" type="text" placeholder="Enter OTP" value="" maxlength="10" inputmode="numeric" autocomplete="one-time-code" style="background-color: #E3F1F9;color: black;">
-					  </div>
-					  <div style="margin-top:10px;">
-						<input type="button" id="mfa_verify" value="Verify" onclick="verifyMfaOtp()"/>
-						<input type="button" id="mfa_cancel" value="Cancel" onclick="cancelMfa()"/>
-					  </div>
-					</fieldset>
-				  </div>
      <!-- <p><a href="#">&raquo; Lost Your Password</a> | <a href="#">Create An Account &raquo;</a></p>-->
     </div>
 	

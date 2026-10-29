@@ -34,9 +34,7 @@ String name="",fromAt="";
 		{
 			//response.sendRedirect("login.jsp?retStr="+respcode);
 			name=retobj.getString("USM_ID");
-			// MFA: the user already logged in at CBS, so jsp/afterLogin.jsp accepts this user without a second factor
-			session.setAttribute("mfa.loginOkUser", name);
-			//response.sendRedirect("jsp/afterLogin.jsp?name="+name);
+			//response.sendRedirect("jsp/afterLogin.jsp?name="+name);		
 		}
 		else
 		{
