@@ -121,35 +121,43 @@
  		if(count==0 )
  		 {
  			 System.out.println("=-----######---in----$###--=");
- 			String query1="select CLO_ITEMSEQNO,count(*) from CLEARINGOUTWARD where CLO_DATE_DDMMYYYY=? group by CLO_ITEMSEQNO having count(*)>1";
+		       //String query1="select CLO_ITEMSEQNO,count(*) from CLEARINGOUTWARD where CLO_DATE_DDMMYYYY=? group by CLO_ITEMSEQNO having count(*)>1";
+		       String query1="select currentRow.CLO_ITEMSEQNO,count(*) from CLEARINGOUTWARD currentRow where currentRow.CLO_DATE_DDMMYYYY=? and currentRow.CLO_BRANCH_CD=? and currentRow.CLO_CONVERT_FLG='N' and exists (select 1 from CLEARINGOUTWARD existingRow where existingRow.CLO_ITEMSEQNO=currentRow.CLO_ITEMSEQNO and existingRow.ROWID<>currentRow.ROWID) group by currentRow.CLO_ITEMSEQNO";
 		    PreparedStatement pst=con.prepareStatement(query1);
 		    pst.setString(1,Configuration.getDDMMYYYY());	
-		    //pst.setString(2,branchcd);	
+					pst.setString(2,branchcd);
 			   ResultSet rst=pst.executeQuery();			   
 			   while(rst.next())
 			   {				 
 				   long itemSequenceNo=Long.parseLong(rst.getString(1));
 				   seqno=rst.getString(1);
-				   String query2="select CLO_ITEMSEQNO, CLO_OLBC from CLEARINGOUTWARD where CLO_DATE_DDMMYYYY=? and CLO_ITEMSEQNO=? and CLO_CONVERT_FLG<>'D'";// nvl(CLO_CONVERT_FLG,'N') in ('Y','N')
+				 String query2="select ROWID from CLEARINGOUTWARD where CLO_DATE_DDMMYYYY=? and CLO_ITEMSEQNO=? and CLO_BRANCH_CD=? and CLO_CONVERT_FLG='N'";
 				    PreparedStatement pst1=con.prepareStatement(query2);
 				    pst1.setString(1,Configuration.getDDMMYYYY());	
-				    //pst1.setString(2,branchcd);	
 				    pst1.setString(2,seqno);	
+					   pst1.setString(3,branchcd);
 					   ResultSet rst1=pst1.executeQuery();			   
 					   while(rst1.next())
 					   {
-						   olbc=rst1.getString(2);
+						     String rowId=rst1.getString(1);
 						   System.out.println("======="+Configuration.getMICRCD(branchcd, con));
-						   newitemSequenceNo=Configuration.getMICRCD(branchcd, con)+ Configuration.lPad(""+itemcnt++, 5, "0");
-						  	//newitemSequenceNo="000000000"+ Configuration.lPad(""+itemcnt++, 5, "0");
-						   // System.out.println("NewitemSequenceNo=="+newitemSequenceNo);
-						   String query3="update CLEARINGOUTWARD set CLO_ITEMSEQNO=? where CLO_DATE_DDMMYYYY=? and CLO_BRANCH_CD=? and CLO_ITEMSEQNO=? and CLO_OLBC=?";
+                           do {
+                               newitemSequenceNo=Configuration.getMICRCD(branchcd, con)+ Configuration.lPad(""+itemcnt, 5, "0");
+							   PreparedStatement sequenceCheck=con.prepareStatement("select count(*) from CLEARINGOUTWARD where CLO_ITEMSEQNO=?");
+							   sequenceCheck.setString(1,newitemSequenceNo);
+							   ResultSet sequenceResult=sequenceCheck.executeQuery();
+							   sequenceResult.next();
+							   boolean sequenceExists=sequenceResult.getInt(1)>0;
+							   sequenceResult.close();
+							   sequenceCheck.close();
+							   if(!sequenceExists)
+								   break;
+							   itemcnt++;
+						   } while(true);
+						   String query3="update CLEARINGOUTWARD set CLO_ITEMSEQNO=? where ROWID=CHARTOROWID(?) and CLO_CONVERT_FLG='N'";
 						    PreparedStatement pst2=con.prepareStatement(query3);
 						    pst2.setString(1,newitemSequenceNo);
-						    pst2.setString(2,Configuration.getDDMMYYYY());	
-						    pst2.setString(3,branchcd);	
-						    pst2.setString(4,seqno);	
-						    pst2.setString(5,olbc);	
+							pst2.setString(2,rowId);
 						    int updateitemseq=pst2.executeUpdate();	
 						   // System.out.println("updateitemseq=="+updateitemseq);
 						    pst2.close();
@@ -160,7 +168,8 @@
 			   rst.close();
  			   pst.close();
  			 //String sql="update CLEARINGOUTWARD set CLO_CONVERT_FLG='Y' where CLO_BRANCH_CD=? and CLO_DATE_DDMMYYYY=? and instr(?,CLO_IMG_FRNT_BW||'!@!'|| CLO_IMG_BACK_BW||'!@!'||CLO_IMG_FRNT_GR)>0";
-				    String sql="update CLEARINGOUTWARD set CLO_CONVERT_FLG='Y' where CLO_DATE_DDMMYYYY=? and CLO_IMG_FRNT_BW is not null and instr(?,CLO_IMG_FRNT_BW)>0 AND CLO_CONVERT_FLG='N'";//CLO_BRANCH_CD=? and	
+				   // String sql="update CLEARINGOUTWARD set CLO_CONVERT_FLG='Y' where CLO_DATE_DDMMYYYY=? and CLO_IMG_FRNT_BW is not null and instr(?,CLO_IMG_FRNT_BW)>0 AND CLO_CONVERT_FLG='N'";//CLO_BRANCH_CD=? and
+					String sql="update CLEARINGOUTWARD set CLO_CONVERT_FLG='Y' where CLO_BRANCH_CD=? and CLO_DATE_DDMMYYYY=? and CLO_IMG_FRNT_BW is not null and instr(?,CLO_IMG_FRNT_BW)>0 AND CLO_CONVERT_FLG='N'";
 				   //int len=fileNames.length;
 				  // len=len/3;			   
 
@@ -171,10 +180,10 @@
 			 								   
 			   for(int i=0;i<filesCnt;i++)
 			   {//1
-			   	   //ps1.setString(1,branchFolder);
+								  ps1.setString(1,branchFolder);
 				 //  System.out.println("66666=="+fileNames[i]);
-				   ps1.setString(1,Configuration.getDDMMYYYY());				   
-				   ps1.setString(2,fileNames[i]);				   					  
+								  ps1.setString(2,Configuration.getDDMMYYYY());
+								  ps1.setString(3,fileNames[i]);
 				   rsUpdateCount+=ps1.executeUpdate();				   
 				   //System.out.println("\n\t updated:"+i+"fileNames[i]:"+fileNames[i]);
 			   }//1

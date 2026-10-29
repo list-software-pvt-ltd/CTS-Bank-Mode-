@@ -48,7 +48,7 @@ String ctstoken=null,flag="";
 			
 				String query="UPDATE CLEARINGOUTWARD set";
 				query+=" CLO_CHQNO=?,CLO_SORTCD=?,CLO_TRANCD=?,CLO_DRAWEE_ACCNO=?,CLO_PPRTOFOLLOW=?,CLO_PAYEE_ACCNM=?";
-				query+=" where trim(CLO_ITEMSEQNO)=? and CLO_DATE_DDMMYYYY=? and CLO_BRANCH_CD=? ";// instr(UPPER(CLO_PAYEE_ACCNM),upper(?))>0
+				query+=" where trim(CLO_ITEMSEQNO)=? and CLO_DATE_DDMMYYYY=? and CLO_BRANCH_CD=? and CLO_CONVERT_FLG='N' ";// instr(UPPER(CLO_PAYEE_ACCNM),upper(?))>0
 				System.out.println(query);
 				ps=con.prepareStatement(query);
 				ps.setString(1,chqNo);

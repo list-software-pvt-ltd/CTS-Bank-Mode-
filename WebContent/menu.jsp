@@ -316,9 +316,9 @@ String flag;
 					<li><a onClick="menuOnClick('searchPastCheques.jsp')" href="#">Search Past Instrument Inward/Outward</a></li>
 					<li><a onClick="menuOnClick('report_clearing_percentile.jsp')" href="#">Clearing Summary Report</a></li>
 					<li><a onClick="menuOnClick('cheuqueSearch.jsp')" href="#">Search Cheques Instruments</a></li>
-			
-			
-			
+			<li><a onClick="menuOnClick('user_master_report.jsp')" href="#">User Master Report</a></li>
+
+
 			<li><a href="#">End of day Reports</a>
 					 	<ul style="margin-left: 170px">
 							<li><a onClick="menuOnClick('consolidated_net_summ_rpt.jsp')" href="#">Consolidated net settlement</a></li>

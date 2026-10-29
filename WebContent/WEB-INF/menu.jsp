@@ -151,6 +151,7 @@
 					<li><a href="report_return_inward_withoutmemo.jsp">Return Inward</a></li>
 					<li><a href="report_paper_to_follow.jsp">Paper To Follow</a></li>					
 					<li><a href="report_extension.jsp">Report Extension</a></li>
+					<li><a href="user_master_report.jsp">User Master Report</a></li>
 					<li><a href="read_clearing_acknowledgement.jsp">Clearing Outward Acknowledgement</a></li>
 				</ul>
 			</li>
