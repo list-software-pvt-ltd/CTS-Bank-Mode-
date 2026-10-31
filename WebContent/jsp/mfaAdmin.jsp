@@ -8,7 +8,7 @@
 <%@ page import="java.util.List"%>
 <%!
 	/*
-	 * MFA admin page (mfa-core). One page for every app: users, their factor per app, status, import from CBS.
+	 * MFA admin page (mfa-core). One page for every app: users, their factor per app, status, user import.
 	 * Protected by mfa.admin.password from mfa.properties; disabled when that is not set.
 	 * Works on javax and jakarta containers (implicit objects only). All changes are audited in MFA_AUDIT.
 	 */
@@ -141,7 +141,7 @@
 					boolean hasMobile = mobile != null && !mobile.trim().isEmpty();
 					boolean hasDevice = device != null && !device.trim().isEmpty();
 					if (!hasMobile && !hasDevice)
-						throw new IllegalArgumentException("Enter a mobile no and/or a QR device id");
+						admin.addUser(user, ip);
 					if (hasMobile)
 						admin.setMobile(user, mobile, ip);
 					if (hasDevice)
@@ -152,7 +152,7 @@
 				{
 					MfaAdmin.ImportResult r = admin.importFromCbs(request.getParameter("enrollApp"), purpose,
 							request.getParameter("enrollAuthType"), ip);
-					flash = "Import from CBS: " + r.getRead() + " read, " + r.getInserted() + " added, " + r.getUpdated()
+					flash = "Import: " + r.getRead() + " read, " + r.getInserted() + " added, " + r.getUpdated()
 							+ " updated, " + r.getUnchanged() + " unchanged, " + r.getSkipped() + " skipped, "
 							+ r.getEnrolled() + " enrolled";
 				}
@@ -236,7 +236,7 @@
 	try
 	{
 		apps = admin.appCodes();
-		users = admin.listUsers(q, 200);
+		users = admin.listUsers(q, 1000);
 		total = admin.countUsers();
 	}
 	catch (IllegalStateException e)
@@ -262,14 +262,14 @@
 			</label>
 			<button>Search</button>
 		</form>
-		<span class="muted">&nbsp; showing <%= users.size() %> of <%= total %> users (max 200)</span>
+		<span class="muted">&nbsp; showing <%= users.size() %> of <%= total %> users (max 1000)</span>
 	</div>
 
 	<div class="card">
 		<form method="post" class="inline" autocomplete="off">
 			<input type="hidden" name="action" value="addUser">
 			<input type="hidden" name="csrf" value="<%= h(csrf) %>">
-			<b>Add / update user</b> (when CBS has no mobile no or device id; CBS values still win where present):
+			<b>Add / update user</b> (a value the source system has can't be changed here; leave both blank to add a user for NO_AUTH):
 			<label>&nbsp;User code <input name="user" size="14" maxlength="50" required></label>
 			<label>&nbsp;Mobile no <input name="mobile" size="14" maxlength="16" inputmode="tel"></label>
 			<label>&nbsp;QR device id <input name="device" size="16" maxlength="100"></label>
@@ -279,10 +279,10 @@
 
 	<% if (admin.isImportAvailable()) { %>
 	<div class="card">
-		<form method="post" class="inline" onsubmit="return confirm('Import users from CBS now?');">
+		<form method="post" class="inline" onsubmit="return confirm('Import users now?');">
 			<input type="hidden" name="action" value="import">
 			<input type="hidden" name="csrf" value="<%= h(csrf) %>">
-			<b>Import from CBS</b>: every user with a mobile no or a QR device id (existing users: mobile / device refreshed, status kept).
+			<b>Import users</b>: every user returned by the configured import query that has a mobile no or a QR device id (existing users: mobile / device refreshed, status kept).
 			<label>&nbsp;Also enrol for
 				<select name="enrollApp">
 					<option value="">(no enrolment)</option>
@@ -372,7 +372,7 @@
 			<% } %>
 		</tr>
 		<% } %>
-		<% if (users.isEmpty()) { %><tr><td colspan="<%= 4 + apps.size() %>" class="muted">No users. Import them from CBS.</td></tr><% } %>
+		<% if (users.isEmpty()) { %><tr><td colspan="<%= 4 + apps.size() %>" class="muted">No users. Import them from the source system.</td></tr><% } %>
 	</table>
 	<% if (apps.isEmpty()) { %><p class="muted">No apps yet: add codes to <b>mfa.admin.apps</b> (e.g. EFT,AML) in mfa.properties.</p><% } %>
 <% } %>
